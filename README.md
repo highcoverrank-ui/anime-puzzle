@@ -1,1 +1,229 @@
-# anime-puzzle
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Level Run Video Maker</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101827;color:#f4f7fb;font-family:Arial,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:22px}.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:25px;margin:0}.sub{color:#aab8ca;margin:7px 0 20px}
+.layout{display:grid;grid-template-columns:350px 1fr;gap:18px}
+.panel{background:#1b2739;border:1px solid #34445c;border-radius:14px;padding:16px}
+label{display:block;font-size:13px;color:#c5d0df;margin:12px 0 6px}
+input,select,button{font:inherit}input[type=number],input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #475970;background:#101a29;color:white}
+input[type=file]{width:100%;font-size:12px;color:#cbd5e1}
+button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer}
+.primary{background:#ffad45;color:#1a1a1a}.secondary{background:#33465f;color:white}.danger{background:#a63c45;color:white}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.levels{display:grid;gap:8px;margin-top:10px;max-height:290px;overflow:auto}
+.level{display:grid;grid-template-columns:34px 1fr 76px;gap:8px;align-items:center;background:#111d2d;padding:8px;border-radius:8px}
+.level img{width:34px;height:42px;object-fit:cover;border-radius:5px;background:#33445b}
+.level b{font-size:13px}.level small{display:block;color:#9fb0c5;font-size:11px;margin-top:3px}
+.stage{display:flex;flex-direction:column;gap:12px}
+canvas{width:100%;aspect-ratio:9/16;max-height:780px;object-fit:contain;background:#78d9f5;border-radius:14px;border:1px solid #34445c}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar button{flex:1;min-width:120px}
+.status{display:flex;justify-content:space-between;color:#b7c4d5;font-size:13px}
+.note{font-size:12px;line-height:1.5;color:#9fb0c5;margin-top:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.wrap{padding:12px}canvas{max-height:700px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><h1>🎮 Level Run — Video Maker</h1><span style="color:#9fb0c5;font-size:13px">Rasmlardan avtomatik level video</span></div>
+ <p class="sub">Level rasmlarini yuklang, darvozalarni random yarating va videoni eksport qiling.</p>
+ <div class="layout">
+  <section class="panel">
+   <h3 style="margin:0">1. Level rasmlari</h3>
+   <label>Level soni</label>
+   <div style="padding:10px;border-radius:8px;background:#101a29;border:1px solid #475970">8 ta level — o‘zgarmas</div>
+   <div id="levels" class="levels"></div>
+   <hr style="border-color:#34445c;margin:18px 0">
+   <h3 style="margin:0">2. Video sozlamalari</h3>
+   <label>Boshlang‘ich level</label><select id="startLevel" style="width:100%;padding:10px;border-radius:8px;background:#101a29;color:white;border:1px solid #475970"></select>
+   <div class="row">
+    <div><label>Darvozalar soni</label><input id="gateCount" type="number" min="8" max="30" value="20"></div>
+    <div><label>Davomiyligi (soniya)</label><select id="duration" style="width:100%;padding:10px;border-radius:8px;background:#101a29;color:white;border:1px solid #475970"><option value="60">1:00 — 60 soniya</option><option value="65">1:05 — 65 soniya</option><option value="70" selected>1:10 — 70 soniya</option><option value="75">1:15 — 75 soniya</option><option value="80">1:20 — 80 soniya</option><option value="85">1:25 — 85 soniya</option><option value="90">1:30 — 90 soniya</option></select></div>
+   </div>
+   <div class="row">
+    <div><label>Yashil o‘zgarish</label><select id="greenStep"><option value="1">+1 level</option><option value="2">+1 yoki +2</option><option value="3">+1 dan +3 gacha</option></select></div>
+    <div><label>Qizil o‘zgarish</label><select id="redStep"><option value="1">−1 level</option><option value="2">−1 yoki −2</option><option value="3">−1 dan −3 gacha</option></select></div>
+   </div>
+   <label>Yashil / qizil darvozalar nisbati</label>
+   <select id="ratio" style="width:100%;padding:10px;border-radius:8px;background:#101a29;color:white;border:1px solid #475970">
+    <option value="50">50% yashil / 50% qizil</option><option value="65">65% yashil / 35% qizil</option><option value="35">35% yashil / 65% qizil</option>
+   </select>
+   <div class="toolbar" style="margin-top:16px"><button class="primary" id="generate">🎲 Random video yaratish</button></div>
+   <p class="note">Har bir level uchun alohida rasm va audio yuklang. Audio o‘sha level faol bo‘lganida yangraydi. Video davomiyligi 1:00 dan 1:30 gacha.</p>
+  </section>
+  <section class="stage">
+   <canvas id="screen" width="720" height="1280"></canvas>
+   <div class="status"><span id="status">Tayyor</span><span id="counter">0 / 0</span></div>
+   <div class="toolbar">
+    <button class="secondary" id="play">▶ Ko‘rish</button>
+    <button class="secondary" id="pause">Ⅱ Pauza</button>
+    <button class="primary" id="export">⬇ Videoni yuklab olish</button>
+   </div>
+   <p class="note">Eksport formati: WebM. Chrome yoki Edge brauzerida ishlaydi. MP4 kerak bo‘lsa, WebM faylni keyin MP4 ga aylantirish mumkin.</p>
+  </section>
+ </div>
+</div>
+<script>
+const $=id=>document.getElementById(id), canvas=$('screen'),ctx=canvas.getContext('2d');
+let images=Array(8).fill(null), audioBuffers=Array(8).fill(null), audioNames=Array(8).fill(''), gates=[], currentLevel=0, duration=70, playing=false, startedAt=0, elapsed=0, raf=0;
+const W=720,H=1280;
+let audioCtx=null, audioDestination=null, activeAudioSource=null, lastAudioLevel=-1;
+function createInputs(){
+ const n=8;
+ $('levels').innerHTML=''; images=Array(8).fill(null); audioBuffers=Array(8).fill(null); audioNames=Array(8).fill('');
+ for(let i=0;i<n;i++){
+  const div=document.createElement('div');div.className='level';
+  div.innerHTML=`<img id="thumb${i}" alt=""><div><b>Level ${i+1}</b><small id="file${i}">Rasm tanlanmagan</small><input type="file" accept="image/*" data-level="${i}" aria-label="Level ${i+1} rasmi"><input style="margin-top:5px" type="file" accept="audio/*" data-audio="${i}" aria-label="Level ${i+1} ovozi"></div><span style="font-size:11px;color:#9fb0c5">Rasm +<br>ovoz</span>`;
+  $('levels').appendChild(div);
+ }
+ $('levels').querySelectorAll('[data-level]').forEach(inp=>inp.addEventListener('change',e=>{
+  const i=+e.target.dataset.level, file=e.target.files[0]; if(!file)return;
+  const img=new Image();img.onload=()=>{images[i]=img;$('thumb'+i).src=img.src;$('file'+i).textContent=(file.name)+(audioNames[i]?' · audio ✓':'');draw(elapsed);};
+  img.src=URL.createObjectURL(file);
+ }));
+ $('levels').querySelectorAll('[data-audio]').forEach(inp=>inp.addEventListener('change',async e=>{
+  const i=+e.target.dataset.audio, file=e.target.files[0]; if(!file)return;
+  try{
+   const ctx=await getAudioContext();
+   const buffer=await ctx.decodeAudioData(await file.arrayBuffer());
+   audioBuffers[i]=buffer;audioNames[i]=file.name;
+   $('file'+i).textContent=(images[i]?'Rasm ✓':'Rasm yo‘q')+' · 🔊 '+file.name;
+  }catch(err){$('file'+i).textContent='Audio ochilmadi: '+file.name;}
+ }));
+ $('startLevel').innerHTML=Array.from({length:8},(_,i)=>`<option value="${i}">Level ${i+1}</option>`).join('');
+ currentLevel=0;draw(0);
+}
+async function getAudioContext(){
+ if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();audioDestination=audioCtx.createMediaStreamDestination();}
+ if(audioCtx.state==='suspended')await audioCtx.resume();
+ return audioCtx;
+}
+function playLevelSound(level){
+ if(!audioCtx||!audioBuffers[level])return;
+ if(activeAudioSource){try{activeAudioSource.stop()}catch(e){}}
+ const source=audioCtx.createBufferSource();source.buffer=audioBuffers[level];
+ source.connect(audioCtx.destination);source.connect(audioDestination);source.start(0);activeAudioSource=source;
+}
+function syncLevelAudio(level){
+ if(level!==lastAudioLevel){lastAudioLevel=level;playLevelSound(level);}
+}
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function buildGates(){
+ const n=Math.max(3,Math.min(30,+$('gateCount').value||12));
+ duration=Math.max(60,Math.min(90,+$('duration').value||70));
+ let lvl=+$('startLevel').value, out=[], greenPct=+$('ratio').value;
+ for(let i=0;i<n;i++){
+  const green=Math.random()*100<greenPct;
+  const max=green?+$('greenStep').value:+$('redStep').value;
+  let delta=rand(1,max); if(!green)delta=-delta;
+  const next=Math.max(0,Math.min(7,lvl+delta));
+  if(next===lvl){delta=green?Math.min(1,images.length-1-lvl):-Math.min(1,lvl); }
+  const actual=Math.max(0,Math.min(7,lvl+delta));
+  out.push({green,delta:actual-lvl,from:lvl,to:actual});
+  lvl=actual;
+ }
+ gates=out;elapsed=0;currentLevel=+$('startLevel').value;
+ draw(0);$('status').textContent='Yangi random yo‘nalish tayyor';$('counter').textContent=`0 / ${gates.length}`;
+}
+function roundedRect(x,y,w,h,r,fill,stroke){
+ ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=5;ctx.stroke()}
+}
+function drawImageCard(img,x,y,w,h){
+ roundedRect(x-7,y-7,w+14,h+14,12,'#f6e8d4','#ffffff');
+ if(img){
+  const scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale,sx=(img.width-sw)/2,sy=(img.height-sh)/2;
+  ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,5);ctx.clip();ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);ctx.restore();
+ }else{
+  ctx.fillStyle='#d9c5b3';ctx.fillRect(x,y,w,h);ctx.fillStyle='#243044';ctx.font='bold 34px Arial';ctx.textAlign='center';ctx.fillText('LEVEL '+(currentLevel+1),x+w/2,y+h/2);
+ }
+}
+function draw(t){
+ ctx.clearRect(0,0,W,H);
+ const sky=ctx.createLinearGradient(0,0,0,700);sky.addColorStop(0,'#42c8ef');sky.addColorStop(1,'#b4f1fb');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+ // horizon and perspective track
+ ctx.fillStyle='#f5fbff';ctx.beginPath();ctx.moveTo(0,500);ctx.lineTo(W,500);ctx.lineTo(W,1120);ctx.lineTo(0,1120);ctx.fill();
+ ctx.fillStyle='#a8c8ff';ctx.beginPath();ctx.moveTo(0,540);ctx.lineTo(W,540);ctx.lineTo(W,1120);ctx.lineTo(0,1120);ctx.fill();
+ ctx.fillStyle='#e7fbff';ctx.beginPath();ctx.moveTo(0,650);ctx.lineTo(W,650);ctx.lineTo(W,1280);ctx.lineTo(0,1280);ctx.fill();
+ // track center perspective
+ ctx.fillStyle='#c9d8ff';ctx.beginPath();ctx.moveTo(260,490);ctx.lineTo(460,490);ctx.lineTo(720,1280);ctx.lineTo(0,1280);ctx.fill();
+ // current gate based on progress
+ const p=duration?Math.min(1,t/duration):0, idx=Math.min(gates.length-1,Math.floor(p*gates.length));
+ const local=p*gates.length-idx;
+ const gate=gates[idx];
+ if(gates.length){
+  const dist=1-local, y=170+dist*430, scale=.35+dist*.85;
+  drawGate(gate,y,scale);
+  // distant gates
+  for(let j=1;j<=2;j++){let k=idx+j;if(k<gates.length)drawGate(gates[k],115-j*38,.25-j*.045)}
+ }
+ // title
+ ctx.textAlign='center';ctx.fillStyle='#111827';ctx.font='bold 43px Arial';ctx.fillText('LEVEL RUN',W/2,70);
+ ctx.font='bold 27px Arial';ctx.fillStyle='#e11d48';ctx.fillText('RANDOM CHALLENGE',W/2,112);
+ // image character card
+ let cardY=760-(Math.min(1,t/duration)*70);
+ drawImageCard(images[currentLevel],235,cardY,250,330);
+ // level indicator
+ roundedRect(205,cardY+355,310,70,18,'#10243d','#ffffff');
+ ctx.fillStyle='white';ctx.font='bold 34px Arial';ctx.fillText('LEVEL '+(currentLevel+1),W/2,cardY+402);
+ // progress line
+ roundedRect(60,1190,600,18,9,'#d5e3ef');roundedRect(60,1190,600*p,18,9,'#22c55e');
+ ctx.font='22px Arial';ctx.fillStyle='#172033';ctx.fillText(`${Math.floor(p*100)}%`,W/2,1245);
+}
+function drawGate(g,y,s){
+ if(!g)return;
+ const w=205*s,h=140*s,x=(W-w)/2;
+ ctx.fillStyle='#334155';ctx.fillRect(x-12*s,y,12*s,h+70*s);ctx.fillRect(x+w,y,12*s,h+70*s);
+ const color=g.green?'#16d34a':'#ed263b';
+ roundedRect(x,y,w,h,8,color,'#ffffff');
+ ctx.textAlign='center';ctx.fillStyle='white';ctx.font=`bold ${Math.max(20,42*s)}px Arial`;
+ ctx.fillText((g.delta>0?'+':'')+g.delta,x+w/2,y+h*.62);
+ ctx.font=`bold ${Math.max(12,18*s)}px Arial`;ctx.fillText(g.green?'LEVEL UP':'LEVEL DOWN',x+w/2,y+h*.88);
+}
+function levelAt(t){
+ if(!gates.length)return +$('startLevel').value;
+ const p=Math.min(.999999,Math.max(0,t/duration)), n=gates.length, passed=Math.floor(p*n);
+ let lvl=+$('startLevel').value;
+ for(let i=0;i<passed;i++)lvl=gates[i].to;
+ return lvl;
+}
+function frame(now){
+ if(!playing)return;
+ elapsed=Math.min(duration,(now-startedAt)/1000);
+ currentLevel=levelAt(elapsed);syncLevelAudio(currentLevel);draw(elapsed);
+ $('counter').textContent=`${Math.min(gates.length,Math.floor(elapsed/duration*gates.length))} / ${gates.length}`;
+ $('status').textContent=elapsed>=duration?'Tugadi':'Video ijro etilmoqda';
+ if(elapsed>=duration){playing=false;return}
+ raf=requestAnimationFrame(frame);
+}
+async function play(){if(!gates.length)buildGates();await getAudioContext();if(elapsed>=duration){elapsed=0;lastAudioLevel=-1;}playing=true;startedAt=performance.now()-elapsed*1000;raf=requestAnimationFrame(frame)}
+function pause(){playing=false;cancelAnimationFrame(raf);$('status').textContent='Pauza';}
+$('generate').onclick=()=>{pause();buildGates();play()};
+$('play').onclick=play;$('pause').onclick=pause;
+$('export').onclick=async()=>{
+ if(!gates.length)buildGates();pause();elapsed=0;currentLevel=+$('startLevel').value;draw(0);
+ await getAudioContext();
+ if(audioCtx.state==='suspended')await audioCtx.resume();
+ const videoStream=canvas.captureStream(30);
+ const stream=new MediaStream([...videoStream.getVideoTracks(),...audioDestination.stream.getAudioTracks()]);
+ let mime='video/webm;codecs=vp9';if(!MediaRecorder.isTypeSupported(mime))mime='video/webm';
+ const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:8000000}),chunks=[];
+ rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{const blob=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='level-run-video.webm';a.click();URL.revokeObjectURL(url);$('status').textContent='Video yuklab olindi'};
+ rec.start();const start=performance.now();elapsed=0;lastAudioLevel=-1;
+ function recordFrame(now){
+  const t=Math.min(duration,(now-start)/1000);elapsed=t;currentLevel=levelAt(t);syncLevelAudio(currentLevel);draw(t);
+  $('counter').textContent=`${Math.min(gates.length,Math.floor(t/duration*gates.length))} / ${gates.length}`;
+  if(t<duration)requestAnimationFrame(recordFrame);else{draw(duration);setTimeout(()=>rec.stop(),250)}
+ }
+ $('status').textContent='Video yozilmoqda…';requestAnimationFrame(recordFrame);
+};
+createInputs();buildGates();
+</script>
+</body>
+</html>
