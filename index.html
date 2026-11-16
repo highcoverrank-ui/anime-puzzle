@@ -150,34 +150,45 @@ function drawImageCard(img,x,y,w,h){
 }
 function draw(t){
  ctx.clearRect(0,0,W,H);
- const sky=ctx.createLinearGradient(0,0,0,700);sky.addColorStop(0,'#42c8ef');sky.addColorStop(1,'#b4f1fb');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
- // Ikki yo‘lakli yugurish maydoni
+ const sky=ctx.createLinearGradient(0,0,0,700);sky.addColorStop(0,'#42c8ef');sky.addColorStop(1,'#b4f1fb');
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+ // Perspective yo‘lak: kamera personaj bilan birga oldinga qarab harakatlanayotgandek.
  ctx.fillStyle='#e8f5ff';ctx.fillRect(0,470,W,810);
  ctx.fillStyle='#9eb9e7';ctx.beginPath();ctx.moveTo(235,470);ctx.lineTo(485,470);ctx.lineTo(720,1280);ctx.lineTo(0,1280);ctx.closePath();ctx.fill();
  ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=7;ctx.setLineDash([28,24]);
  ctx.beginPath();ctx.moveTo(360,510);ctx.lineTo(360,1280);ctx.stroke();ctx.setLineDash([]);
- const p=duration?Math.min(1,t/duration):0, idx=Math.min(gates.length-1,Math.floor(p*gates.length));
- const local=p*gates.length-idx, pair=gates[idx];
- // Darvozalar ekranda doim bir joyda turadi; faqat personaj ularga qarab yuradi.
- if(gates.length) drawGatePair(pair,500,1.0);
+
+ const p=duration?Math.min(.999999,t/duration):0, n=gates.length;
+ const progress=p*n, idx=Math.min(n-1,Math.floor(progress)), local=progress-idx;
+ const pair=gates[idx];
+
+ // Har bir juft darvoza ufqdan kelib, personajga yaqinlashadi.
+ // Oldingi juftlik ekrandan chiqadi, keyingisi esa uning ortidan ufqda paydo bo‘ladi.
+ for(let k=idx;k<Math.min(n,idx+3);k++){
+  const phase=progress-k; // 0..1: shu darvoza juftligining yaqinlashish bosqichi
+  const y=500+phase*410;
+  const scale=.25+phase*.78;
+  if(y<930)drawGatePair(gates[k],y,scale);
+ }
+
  ctx.textAlign='center';ctx.fillStyle='#111827';ctx.font='bold 43px Arial';ctx.fillText('LEVEL RUN',W/2,70);
  ctx.font='bold 27px Arial';ctx.fillStyle='#e11d48';ctx.fillText('RUN THROUGH THE GATES',W/2,112);
 
- // Personaj har bir juft darvoza tomon oldinga yuradi, tanlangan darvozaga
- // yon tomondan buriladi, darvoza tekisligidan o'tadi va keyingi juftlikka yo'l oladi.
+ // Personaj doim oldinga yuguradi. Tanlangan yo‘lakka faqat darvozaga yetish
+ // paytida buriladi; darvozalar esa unga qarab yaqinlashib keladi.
  let laneX=360;
  if(pair){
   const targetX=pair.chosenIndex===0?225:495;
-  const sideMove=Math.max(0,Math.min(1,(local-.18)/.34));
-  const smoothSide=sideMove*sideMove*(3-2*sideMove);
-  laneX=360+(targetX-360)*smoothSide;
+  const approach=Math.max(0,Math.min(1,(local-.48)/.32));
+  const smooth=approach*approach*(3-2*approach);
+  laneX=360+(targetX-360)*smooth;
  }
- const walk=Math.max(0,Math.min(1,local/.92));
- const smoothWalk=walk*walk*(3-2*walk);
- const cardY=930-(smoothWalk*390);
+ const bob=Math.sin(t*13)*5;
+ const cardY=875+bob;
  drawImageCard(images[currentLevel],laneX-100,cardY,200,268);
  roundedRect(laneX-128,cardY+286,256,58,15,'#10243d','#ffffff');
  ctx.fillStyle='white';ctx.font='bold 27px Arial';ctx.fillText('LEVEL '+(currentLevel+1),laneX,cardY+324);
+
  roundedRect(60,1190,600,18,9,'#d5e3ef');roundedRect(60,1190,600*p,18,9,'#22c55e');
  ctx.font='22px Arial';ctx.fillStyle='#172033';ctx.fillText(`${Math.floor(p*100)}%`,W/2,1245);
 }
@@ -202,7 +213,7 @@ function levelAt(t){
  const passed=Math.floor(p*n), local=p*n-passed;
  let lvl=+$('startLevel').value;
  for(let i=0;i<Math.min(passed,n);i++)lvl=gates[i].to;
- if(passed<n && local>=.78)lvl=gates[passed].to;
+ if(passed<n && local>=.90)lvl=gates[passed].to;
  return lvl;
 }
 function frame(now){
