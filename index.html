@@ -158,32 +158,32 @@ function draw(t){
  ctx.beginPath();ctx.moveTo(360,510);ctx.lineTo(360,1280);ctx.stroke();ctx.setLineDash([]);
  const p=duration?Math.min(1,t/duration):0, idx=Math.min(gates.length-1,Math.floor(p*gates.length));
  const local=p*gates.length-idx, pair=gates[idx];
- if(gates.length){
-  const dist=1-local, y=185+dist*350, scale=.42+dist*.72;
-  drawGatePair(pair,y,scale);
-  for(let j=1;j<=2;j++){let k=idx+j;if(k<gates.length)drawGatePair(gates[k],120-j*35,.27-j*.035)}
- }
+ // Darvozalar ekranda doim bir joyda turadi; faqat personaj ularga qarab yuradi.
+ if(gates.length) drawGatePair(pair,500,1.0);
  ctx.textAlign='center';ctx.fillStyle='#111827';ctx.font='bold 43px Arial';ctx.fillText('LEVEL RUN',W/2,70);
- ctx.font='bold 27px Arial';ctx.fillStyle='#e11d48';ctx.fillText('CHOOSE YOUR GATE',W/2,112);
+ ctx.font='bold 27px Arial';ctx.fillStyle='#e11d48';ctx.fillText('RUN THROUGH THE GATES',W/2,112);
 
- // Rasm markazdan tasodifiy tanlangan darvoza yo‘lagiga harakatlanadi.
+ // Personaj har bir juft darvoza tomon oldinga yuradi, tanlangan darvozaga
+ // yon tomondan buriladi, darvoza tekisligidan o'tadi va keyingi juftlikka yo'l oladi.
  let laneX=360;
  if(pair){
-  const targetX=pair.chosenIndex===0?190:530;
-  const move=Math.max(0,Math.min(1,(local-.48)/.38));
-  const smooth=move*move*(3-2*move);
-  laneX=360+(targetX-360)*smooth;
+  const targetX=pair.chosenIndex===0?225:495;
+  const sideMove=Math.max(0,Math.min(1,(local-.18)/.34));
+  const smoothSide=sideMove*sideMove*(3-2*sideMove);
+  laneX=360+(targetX-360)*smoothSide;
  }
- const cardY=760-(Math.min(1,t/duration)*45);
- drawImageCard(images[currentLevel],laneX-112,cardY,224,300);
- roundedRect(laneX-142,cardY+322,284,64,16,'#10243d','#ffffff');
- ctx.fillStyle='white';ctx.font='bold 30px Arial';ctx.fillText('LEVEL '+(currentLevel+1),laneX,cardY+364);
+ const walk=Math.max(0,Math.min(1,local/.92));
+ const smoothWalk=walk*walk*(3-2*walk);
+ const cardY=930-(smoothWalk*390);
+ drawImageCard(images[currentLevel],laneX-100,cardY,200,268);
+ roundedRect(laneX-128,cardY+286,256,58,15,'#10243d','#ffffff');
+ ctx.fillStyle='white';ctx.font='bold 27px Arial';ctx.fillText('LEVEL '+(currentLevel+1),laneX,cardY+324);
  roundedRect(60,1190,600,18,9,'#d5e3ef');roundedRect(60,1190,600*p,18,9,'#22c55e');
  ctx.font='22px Arial';ctx.fillStyle='#172033';ctx.fillText(`${Math.floor(p*100)}%`,W/2,1245);
 }
 function drawGatePair(pair,y,s){
  if(!pair)return;
- const w=174*s,h=122*s,gap=28*s, total=w*2+gap, leftX=(W-total)/2;
+ const w=190*s,h=154*s,gap=30*s, total=w*2+gap, leftX=(W-total)/2;
  const gatesToDraw=[{g:pair.left,x:leftX},{g:pair.right,x:leftX+w+gap}];
  for(const item of gatesToDraw){
   const g=item.g,x=item.x;
@@ -202,7 +202,7 @@ function levelAt(t){
  const passed=Math.floor(p*n), local=p*n-passed;
  let lvl=+$('startLevel').value;
  for(let i=0;i<Math.min(passed,n);i++)lvl=gates[i].to;
- if(passed<n && local>=.86)lvl=gates[passed].to;
+ if(passed<n && local>=.78)lvl=gates[passed].to;
  return lvl;
 }
 function frame(now){
