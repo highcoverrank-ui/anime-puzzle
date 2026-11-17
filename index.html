@@ -104,6 +104,7 @@ canvas{width:100%;height:100%;display:block}
     <div><label class="l" for="seed">Seed (bir xil video uchun)</label><input id="seed" type="number" min="1" max="999999999" value="1"></div>
     <div><label class="l" for="fps">Kadr tezligi</label><select id="fps"><option value="30">30 fps</option><option value="60">60 fps</option></select></div>
    </div>
+   <label class="chk"><input type="checkbox" id="endMax" checked> Oxirida maksimal levelga (8) chiqsin</label>
    <label class="chk"><input type="checkbox" id="loop" checked> Audio qisqa bo‘lsa, takrorlansin</label>
    <label class="chk"><input type="checkbox" id="hear" checked> Eksport paytida ovozni eshitish</label>
    <div class="toolbar" style="margin-top:16px"><button class="primary" id="generate">🎲 Random video yaratish</button></div>
@@ -141,9 +142,9 @@ const THEMES={
 /* ---------- tasodifiy (seed bilan) ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* ---------- sozlamalar ---------- */
-const IDS=['startLevel','gateCount','duration','greenStep','redStep','ratio','theme','res','title','tag','seed','fps','loop','hear'];
+const IDS=['startLevel','gateCount','duration','greenStep','redStep','ratio','theme','res','title','tag','seed','fps','loop','hear','endMax'];
 function cfg(){return{start:+$('startLevel').value||0,n:clamp(Math.round(+$('gateCount').value||20),8,30),dur:clamp(+$('duration').value||70,10,90),gMax:+$('greenStep').value,rMax:+$('redStep').value,
- ratio:+$('ratio').value,theme:$('theme').value,scale:+$('res').value||1,title:($('title').value||'LEVEL RUN').toUpperCase(),tag:($('tag').value||'').toUpperCase(),seed:clamp(Math.round(+$('seed').value)||1,1,999999999),fps:+$('fps').value||30,loop:$('loop').checked,hear:$('hear').checked}}
+ ratio:+$('ratio').value,theme:$('theme').value,scale:+$('res').value||1,title:($('title').value||'LEVEL RUN').toUpperCase(),tag:($('tag').value||'').toUpperCase(),seed:clamp(Math.round(+$('seed').value)||1,1,999999999),fps:+$('fps').value||30,loop:$('loop').checked,hear:$('hear').checked,endMax:$('endMax').checked}}
 function saveSettings(){try{const o={};IDS.forEach(id=>{const e=$(id);o[id]=e.type==='checkbox'?e.checked:e.value});localStorage.setItem('levelRunSettings',JSON.stringify(o))}catch(e){}}
 function loadSettings(){try{const o=JSON.parse(localStorage.getItem('levelRunSettings')||'null');if(!o)return;IDS.forEach(id=>{if(!(id in o))return;const e=$(id);if(e.type==='checkbox')e.checked=!!o[id];else e.value=o[id]})}catch(e){}}
 /* ---------- level qatorlari ---------- */
@@ -194,11 +195,14 @@ function buildGates(){
  S.seed=c.seed;S.duration=c.dur;S.startLevel=c.start;S.scale=c.scale;
  let lvl=c.start;const out=[];
  for(let i=0;i<c.n;i++){
-  const gTo=lvl>=MAXL?lvl:Math.min(MAXL,lvl+ri(1,c.gMax)),rTo=lvl<=0?lvl:Math.max(0,lvl-ri(1,c.rMax));
+  let gTo=lvl>=MAXL?lvl:Math.min(MAXL,lvl+ri(1,c.gMax));const rTo=lvl<=0?lvl:Math.max(0,lvl-ri(1,c.rMax));
+  if(c.endMax&&lvl<MAXL){const need=Math.max(0,MAXL-(c.n-i-1)*c.gMax);gTo=Math.min(MAXL,Math.max(gTo,Math.min(need,lvl+c.gMax)))}
   const gd=gTo-lvl,rd=rTo-lvl;
   const green={green:true,from:lvl,to:gTo,delta:gd,text:gd>0?'+'+gd:'MAX',label:gd>0?'LEVEL UP':'MAX LEVEL'};
   const red={green:false,from:lvl,to:rTo,delta:rd,text:rd<0?'−'+(-rd):'MIN',label:rd<0?'LEVEL DOWN':'MIN LEVEL'};
-  let wantGreen=rnd()*100<c.ratio;if(lvl>=MAXL)wantGreen=false;if(lvl<=0)wantGreen=true;
+  const rem=c.n-i-1,late=i>=c.n-3;let wantGreen=rnd()*100<c.ratio;
+  if(lvl>=MAXL)wantGreen=c.endMax?late:false;if(lvl<=0)wantGreen=true;
+  if(c.endMax){const need=Math.max(0,MAXL-rem*c.gMax);if(!late&&gTo>=MAXL&&lvl<MAXL)wantGreen=false;if(rTo<need)wantGreen=true}
   const greenLeft=rnd()<0.5,pair=greenLeft?[green,red]:[red,green],chosenIndex=wantGreen?(greenLeft?0:1):(greenLeft?1:0),chosen=pair[chosenIndex];
   out.push({left:pair[0],right:pair[1],chosenIndex,chosen,from:lvl,to:chosen.to});lvl=chosen.to}
  S.gates=out;S.elapsed=0;S.level=c.start;S.lastKey=-1;
@@ -275,7 +279,7 @@ function draw(t){
  ctx.fillStyle=th.hud;ctx.font=`22px ${FONT}`;ctx.fillText(`${passedCount(t)} / ${n}  ·  ${Math.floor(p*100)}%`,W/2,1245);
  // yakun
  if(t>RT){const u=ease((t-RT)/.45);ctx.fillStyle=`rgba(7,12,26,${.95*u})`;ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.globalAlpha=u;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold 54px ${FONT}`;ctx.fillText('FINAL LEVEL',W/2,300);
+  ctx.save();ctx.globalAlpha=u;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold 54px ${FONT}`;ctx.fillText(level===MAXL?'MAX LEVEL!':'FINAL LEVEL',W/2,300);
   ctx.fillStyle='#ffad45';ctx.font=`bold 150px ${FONT}`;ctx.shadowColor='rgba(255,173,69,.7)';ctx.shadowBlur=30;ctx.fillText(String(level+1),W/2,450);ctx.shadowBlur=0;ctx.restore();
   ctx.save();ctx.globalAlpha=u;drawCard(S.images[level],W/2-130,520,260,348,level,1+.03*Math.sin(t*4));ctx.restore();
   const rnd=mulberry32(99);for(let q=0;q<30;q++){const x=rnd()*W,sp=40+rnd()*90,y=((rnd()*H+(t-RT)*sp*6)%H);ctx.fillStyle=`rgba(255,${180+rnd()*70|0},${90+rnd()*120|0},${.7*u})`;ctx.beginPath();ctx.arc(x,y,2+rnd()*3,0,6.283);ctx.fill()}}
