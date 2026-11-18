@@ -169,21 +169,27 @@ function updateWarn(){const mi=S.vids.map((x,i)=>x?null:i+1).filter(Boolean);
 const vidHost=document.createElement('div');vidHost.style.cssText='position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;overflow:hidden;pointer-events:none;z-index:-1';document.body.appendChild(vidHost);
 function dropVideo(i){const v=S.vids[i];if(!v)return;try{v.el.pause();if(v.gain)v.gain.disconnect();if(v.node)v.node.disconnect();v.el.removeAttribute('src');v.el.load();v.el.remove()}catch(e){}URL.revokeObjectURL(v.url);S.vids[i]=null}
 function setVideo(i,file){return new Promise(res=>{
- if(!file||!(file.type.startsWith('video/')||/\.(mp4|webm|mov|m4v|mkv)$/i.test(file.name)))return res();
- const url=URL.createObjectURL(file),el=document.createElement('video');let done=false,thumbDone=false;
+ if(!file||!isVid(file))return res();
+ const url=URL.createObjectURL(file),el=document.createElement('video');let done=false,thumbDone=false,tm=0;
  el.playsInline=true;el.setAttribute('playsinline','');el.loop=true;el.preload='auto';el.src=url;vidHost.appendChild(el);
- el.onerror=()=>{if(done)return;done=true;URL.revokeObjectURL(url);el.remove();$('file'+i).textContent='Video ochilmadi: '+file.name;res()};
+ $('file'+i).textContent='Yuklanmoqda: '+file.name+' …';
+ const why=()=>{const e=el.error;return e&&e.code===4?'format/kodek qo‘llanmaydi (H.265/HEVC bo‘lsa, H.264 MP4 ga aylantiring)':(e&&e.code===3?'dekodlash xatosi':'yuklanish vaqti tugadi')};
+ const fail=m=>{if(done)return;done=true;clearTimeout(tm);URL.revokeObjectURL(url);el.removeAttribute('src');try{el.load()}catch(e){}el.remove();const t=`Level ${i+1}: video ochilmadi (${file.name}) — ${m}`;$('file'+i).textContent=t;setStatus(t);res()};
+ el.onerror=()=>fail(why());
+ tm=setTimeout(()=>fail(why()),15000);
  const mk=()=>{if(thumbDone)return;thumbDone=true;try{const c=document.createElement('canvas');c.width=92;c.height=116;const x=c.getContext('2d'),vw=el.videoWidth,vh=el.videoHeight,s=Math.max(92/vw,116/vh),sw=92/s,sh=116/s;x.drawImage(el,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,92,116);S.thumbs[i]=c.toDataURL('image/jpeg',.7)}catch(e){}refreshDuration();refreshRow(i);previewFrame();res()};
- el.onloadeddata=()=>{if(done)return;done=true;dropVideo(i);S.vids[i]={el,url,node:null,gain:null};S.vidNames[i]=file.name;
+ const ok=()=>{if(done)return;if(!el.videoWidth)return fail('tasvir yo‘q yoki kodek qo‘llanmaydi (H.265/HEVC bo‘lishi mumkin)');
+  done=true;clearTimeout(tm);dropVideo(i);S.vids[i]={el,url,node:null,gain:null};S.vidNames[i]=file.name;
   el.addEventListener('seeked',()=>{if(!S.playing&&!S.exporting)draw(S.elapsed)});
   el.addEventListener('seeked',function f(){el.removeEventListener('seeked',f);mk()});
   try{el.currentTime=Math.min(.1,(el.duration||1)/2)}catch(e){mk()}
-  setTimeout(mk,1500)}})}
+  setTimeout(mk,1500)};
+ el.onloadeddata=ok;el.oncanplay=ok})}
 async function setAudio(i,file){if(!file)return;try{const ac=await ensureAudio();S.bufs[i]=await ac.decodeAudioData(await file.arrayBuffer());S.audNames[i]=file.name;refreshRow(i)}catch(e){S.bufs[i]=null;S.audNames[i]='';$('file'+i).textContent='Audio ochilmadi: '+file.name}}
 function clearLevel(i){dropVideo(i);S.vidNames[i]='';S.thumbs[i]='';S.bufs[i]=null;S.audNames[i]='';refreshDuration();refreshRow(i);redraw()}
 const natural=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
 const isVid=f=>f.type.startsWith('video/')||/\.(mp4|webm|mov|m4v|mkv)$/i.test(f.name);
-async function bulkVideos(files){const l=[...files].filter(isVid).sort(natural).slice(0,NL);for(let i=0;i<l.length;i++)await setVideo(i,l[i])}
+async function bulkVideos(files){const l=[...files].filter(isVid).sort(natural).slice(0,NL);await Promise.all(l.map((f,i)=>setVideo(i,f)))}
 async function bulkAudio(files){const l=[...files].filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(f.name)).sort(natural).slice(0,NL);for(let i=0;i<l.length;i++)await setAudio(i,l[i])}
 /* ---------- audio ---------- */
 const AU={ctx:null,bus:null,spk:null,rec:null,cur:null};
