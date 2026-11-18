@@ -109,7 +109,7 @@ canvas{width:100%;height:100%;display:block}
    <label class="chk"><input type="checkbox" id="hear" checked> Eksport paytida ovozni eshitish</label>
    <div class="toolbar" style="margin-top:16px"><button class="primary" id="generate">🎲 Random video yaratish</button></div>
    <div class="route" id="route" aria-label="Yo‘nalish"></div>
-   <p class="note">Level faol bo‘lganda o‘sha levelning videosi (va ovozi) ijro etiladi. Video kadrning 1/4 qismi (360×640) o‘lchamida chiqadi va yo‘lakdan yo‘lakka harakatlanadi. Bir xil seed va bir xil sozlamalar har safar bir xil yo‘nalish beradi. Video yuklanmagan levelda raqamli kartochka ko‘rinadi.</p>
+   <p class="note">Level faol bo‘lganda o‘sha levelning videosi (va ovozi) ijro etiladi. Video kadrning 1/4 qismi (360×640) o‘lchamida chiqadi va yo‘lakdan yo‘lakka harakatlanadi. Bir xil seed va bir xil sozlamalar har safar bir xil yo‘nalish beradi. Video yuklanmagan levelda raqamli kartochka ko‘rinadi. Level qaytib kelganda video to‘xtagan joyidan davom etadi (tugasa boshidan aylanadi), oxirgi level videosi oxirigacha ko‘rsatiladi va levellar iloji boricha teng taqsimlanadi.</p>
   </section>
   <section class="stage" aria-label="Video">
    <div class="cw"><canvas id="screen" width="720" height="1280"></canvas></div>
@@ -173,14 +173,14 @@ function setVideo(i,file){return new Promise(res=>{
  const url=URL.createObjectURL(file),el=document.createElement('video');let done=false,thumbDone=false;
  el.playsInline=true;el.setAttribute('playsinline','');el.loop=true;el.preload='auto';el.src=url;vidHost.appendChild(el);
  el.onerror=()=>{if(done)return;done=true;URL.revokeObjectURL(url);el.remove();$('file'+i).textContent='Video ochilmadi: '+file.name;res()};
- const mk=()=>{if(thumbDone)return;thumbDone=true;try{const c=document.createElement('canvas');c.width=92;c.height=116;const x=c.getContext('2d'),vw=el.videoWidth,vh=el.videoHeight,s=Math.max(92/vw,116/vh),sw=92/s,sh=116/s;x.drawImage(el,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,92,116);S.thumbs[i]=c.toDataURL('image/jpeg',.7)}catch(e){}refreshRow(i);previewFrame();res()};
+ const mk=()=>{if(thumbDone)return;thumbDone=true;try{const c=document.createElement('canvas');c.width=92;c.height=116;const x=c.getContext('2d'),vw=el.videoWidth,vh=el.videoHeight,s=Math.max(92/vw,116/vh),sw=92/s,sh=116/s;x.drawImage(el,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,92,116);S.thumbs[i]=c.toDataURL('image/jpeg',.7)}catch(e){}refreshDuration();refreshRow(i);previewFrame();res()};
  el.onloadeddata=()=>{if(done)return;done=true;dropVideo(i);S.vids[i]={el,url,node:null,gain:null};S.vidNames[i]=file.name;
   el.addEventListener('seeked',()=>{if(!S.playing&&!S.exporting)draw(S.elapsed)});
   el.addEventListener('seeked',function f(){el.removeEventListener('seeked',f);mk()});
   try{el.currentTime=Math.min(.1,(el.duration||1)/2)}catch(e){mk()}
   setTimeout(mk,1500)}})}
 async function setAudio(i,file){if(!file)return;try{const ac=await ensureAudio();S.bufs[i]=await ac.decodeAudioData(await file.arrayBuffer());S.audNames[i]=file.name;refreshRow(i)}catch(e){S.bufs[i]=null;S.audNames[i]='';$('file'+i).textContent='Audio ochilmadi: '+file.name}}
-function clearLevel(i){dropVideo(i);S.vidNames[i]='';S.thumbs[i]='';S.bufs[i]=null;S.audNames[i]='';refreshRow(i);redraw()}
+function clearLevel(i){dropVideo(i);S.vidNames[i]='';S.thumbs[i]='';S.bufs[i]=null;S.audNames[i]='';refreshDuration();refreshRow(i);redraw()}
 const natural=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
 const isVid=f=>f.type.startsWith('video/')||/\.(mp4|webm|mov|m4v|mkv)$/i.test(f.name);
 async function bulkVideos(files){const l=[...files].filter(isVid).sort(natural).slice(0,NL);for(let i=0;i<l.length;i++)await setVideo(i,l[i])}
@@ -198,27 +198,42 @@ function startAudio(level,offset,loop){
  const now=AU.ctx.currentTime;gn.gain.setValueAtTime(0,now);gn.gain.linearRampToValueAtTime(1,now+(off>0.2?0.04:0.08));
  src.connect(gn);gn.connect(AU.bus);src.start(0,off);AU.cur={src,gain:gn}}
 /* ---------- video mantiqi ---------- */
-function runTime(){return Math.max(5,S.duration-OUT)}
+function runTime(){return Math.max(5,(S.gates.length||1)*(S.gap||5))}
+/* videoning "to‘plangan" ijro vaqti: level qaytib kelganda to‘xtagan joyidan davom etadi */
+function vidOffset(t){const p=passedCount(t);let cur=S.startLevel,ss=0;const acc=Array(NL).fill(0);for(let k=0;k<p;k++){const pt=passTime(k);acc[cur]+=pt-ss;ss=pt;cur=S.gates[k].to}return acc[cur]+Math.max(0,t-ss)}
+/* oxirgi level videosi oxirigacha ko‘rsatilishi uchun umumiy davomiylikni hisoblash */
+function calcDuration(){const n=S.gates.length;if(!n)return;const lp=passTime(n-1),v=S.vids[S.gates[n-1].to],d=v&&v.el.duration;let tail=OUT;
+ if(d&&isFinite(d)){const a=vidOffset(lp+.01),m=a%d,rem=(a>.3&&(m<.3||d-m<.05))?0:d-m;tail=Math.max(OUT,rem+.4)}
+ S.duration=lp+tail}
+function refreshDuration(){if(S.playing||S.exporting)return;calcDuration();$('ttot').textContent=fmtT(S.duration);if(S.elapsed>S.duration)S.elapsed=S.duration;updateHud(S.elapsed)}
 function passTime(k){return(k+0.9)/S.gates.length*runTime()}
 function passedCount(t){const n=S.gates.length;if(!n)return 0;return clamp(Math.floor(Math.min(t,runTime())/runTime()*n-0.9)+1,0,n)}
 function levelAt(t){const p=passedCount(t);return p?S.gates[p-1].to:S.startLevel}
 function levelStart(t){const p=passedCount(t);return p?passTime(p-1):0}
 function buildGates(){
  const c=cfg(),rnd=mulberry32(c.seed),ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
- S.seed=c.seed;S.duration=c.n*c.gap+OUT;S.startLevel=c.start;S.scale=c.scale;
- let lvl=c.start;const out=[];
+ S.seed=c.seed;S.gap=c.gap;S.startLevel=c.start;S.scale=c.scale;
+ let lvl=c.start;const out=[],cnt=Array(NL).fill(0);cnt[lvl]=1;
  for(let i=0;i<c.n;i++){
-  let gTo=lvl>=MAXL?lvl:Math.min(MAXL,lvl+ri(1,c.gMax));const rTo=lvl<=0?lvl:Math.max(0,lvl-ri(1,c.rMax));
-  if(c.endMax&&lvl<MAXL){const need=Math.max(0,MAXL-(c.n-i-1)*c.gMax);gTo=Math.min(MAXL,Math.max(gTo,Math.min(need,lvl+c.gMax)))}
+  const rem=c.n-i-1,lo=Math.max(0,lvl-c.rMax),hi=Math.min(MAXL,lvl+c.gMax);
+  let cand=[];for(let t=lo;t<=hi;t++)if(t!==lvl)cand.push(t);
+  if(c.endMax)cand=cand.filter(t=>Math.ceil((MAXL-t)/c.gMax)<=rem);
+  if(!cand.length)cand=(c.endMax&&lvl<MAXL)?[hi]:[lvl];
+  const mn=Math.min(...cand.map(t=>cnt[t])),best=cand.filter(t=>cnt[t]===mn),ups=best.filter(t=>t>lvl),dns=best.filter(t=>t<lvl);
+  let pool=best;if(ups.length&&dns.length)pool=rnd()*100<c.ratio?ups:dns;
+  const to=pool[Math.floor(rnd()*pool.length)];cnt[to]++;
+  const d=to-lvl;let gTo,rTo;
+  if(d>0){gTo=to;rTo=lvl<=0?lvl:Math.max(0,lvl-ri(1,c.rMax))}
+  else if(d<0){rTo=to;gTo=lvl>=MAXL?lvl:Math.min(MAXL,lvl+ri(1,c.gMax))}
+  else if(lvl>=MAXL){gTo=lvl;rTo=lvl<=0?lvl:Math.max(0,lvl-ri(1,c.rMax))}
+  else{rTo=lvl;gTo=Math.min(MAXL,lvl+ri(1,c.gMax))}
   const gd=gTo-lvl,rd=rTo-lvl;
   const green={green:true,from:lvl,to:gTo,delta:gd,text:gd>0?'+'+gd:'MAX',label:gd>0?'LEVEL UP':'MAX LEVEL'};
   const red={green:false,from:lvl,to:rTo,delta:rd,text:rd<0?'−'+(-rd):'MIN',label:rd<0?'LEVEL DOWN':'MIN LEVEL'};
-  const rem=c.n-i-1,late=i>=c.n-3;let wantGreen=rnd()*100<c.ratio;
-  if(lvl>=MAXL)wantGreen=c.endMax?late:false;if(lvl<=0)wantGreen=true;
-  if(c.endMax){const need=Math.max(0,MAXL-rem*c.gMax);if(!late&&gTo>=MAXL&&lvl<MAXL)wantGreen=false;if(rTo<need)wantGreen=true}
+  const wantGreen=d>0||(d===0&&lvl>=MAXL);
   const greenLeft=rnd()<0.5,pair=greenLeft?[green,red]:[red,green],chosenIndex=wantGreen?(greenLeft?0:1):(greenLeft?1:0),chosen=pair[chosenIndex];
   out.push({left:pair[0],right:pair[1],chosenIndex,chosen,from:lvl,to:chosen.to});lvl=chosen.to}
- S.gates=out;S.elapsed=0;S.level=c.start;S.lastKey=-1;
+ S.gates=out;calcDuration();S.elapsed=0;S.level=c.start;S.lastKey=-1;
  canvas.width=W*S.scale;canvas.height=H*S.scale;
  $('ttot').textContent=fmtT(S.duration);renderRoute();setStatus(`Yo‘nalish tayyor · seed ${S.seed}`);renderAt(0);previewFrame()}
 function renderRoute(){
@@ -260,15 +275,16 @@ let curVid=-1;
 function vidNode(i){const v=S.vids[i];if(v&&!v.node&&AU.ctx){try{v.node=AU.ctx.createMediaElementSource(v.el);v.gain=AU.ctx.createGain();v.node.connect(v.gain);v.gain.connect(AU.bus)}catch(e){v.node=null}}return v}
 function startVideo(level,offset,force){
  const v=vidNode(level);
- S.vids.forEach((o,i)=>{if(o&&i!==level){o.el.pause();if(i===curVid){try{o.el.currentTime=0}catch(e){}}}});
+ S.vids.forEach((o,i)=>{if(o&&i!==level)o.el.pause()});
  curVid=level;if(!v)return;
  if(v.gain)v.gain.gain.value=S.bufs[level]?0:1;
  const el=v.el,d=el.duration;if(!force&&!el.paused)return;
  let off=Math.max(0,offset);if(d&&isFinite(d))off%=d;
- try{el.currentTime=off}catch(e){}
+ let df=Math.abs(el.currentTime-off);if(d&&isFinite(d))df=Math.min(df,d-df);
+ if(df>.3){try{el.currentTime=off}catch(e){}}
  const pr=el.play();if(pr&&pr.catch)pr.catch(()=>{})}
 function stopMedia(f){stopAudio(f);S.vids.forEach(v=>v&&v.el.pause())}
-function previewFrame(){if(S.playing||S.exporting)return;const t=S.elapsed,l=levelAt(t);S.vids.forEach(v=>v&&v.el.pause());const v=S.vids[l];if(!v)return;const d=v.el.duration;let off=Math.max(0,t-levelStart(t));if(d&&isFinite(d))off%=d;try{v.el.currentTime=off}catch(e){}}
+function previewFrame(){if(S.playing||S.exporting)return;const t=S.elapsed,l=levelAt(t);S.vids.forEach(v=>v&&v.el.pause());const v=S.vids[l];if(!v)return;const d=v.el.duration;let off=vidOffset(t);if(d&&isFinite(d))off%=d;try{v.el.currentTime=off}catch(e){}}
 function prepVideo(l){return new Promise(res=>{S.vids.forEach(o=>o&&o.el.pause());const v=S.vids[l];if(!v)return res();const el=v.el;if(el.currentTime===0&&el.readyState>=2)return res();const f=()=>{el.removeEventListener('seeked',f);res()};el.addEventListener('seeked',f);try{el.currentTime=0}catch(e){res()}setTimeout(res,800)})}
 /* TikTok video kartochkasi (kadrning 1/4 qismi): yumaloq burchak, soya, cover-fit */
 function drawVideoCard(level,cx,by,o){
@@ -295,7 +311,7 @@ function draw(t){
  const kp=Math.floor(prog-.9),pt=kp>=0&&kp<n?t-passTime(kp):9,PD=.9,pg=kp>=0&&kp<n?S.gates[kp]:null;
  if(pg&&pt>=0&&pt<PD){if(pg.chosen.green)bump=1+.1*(1-pt/PD);else shake=Math.sin(pt*70)*9*(1-pt/.5>0?1-pt/.5:0)}
  {const vx=(laneAt(prog+.02)-laneAt(prog-.02))/.04,turn=clamp(vx/540,-1,1);drawVideoCard(level,laneX+shake,VB,{lean:turn*.07,scale:bump})}
- drawGates(prog,n,.38); // video ustida yarim shaffof darvozalar
+ drawGates(prog,n,.55); // video ustida yarim shaffof darvozalar
  ctx.save();ctx.textAlign='center';ctx.lineJoin='round';ctx.font=`bold 30px ${FONT}`;ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.strokeText('LEVEL '+(level+1),laneX+shake,cardY+334);ctx.fillStyle='#fff';ctx.fillText('LEVEL '+(level+1),laneX+shake,cardY+334);ctx.restore();
  // gate efekti
  if(pg&&pt>=0&&pt<PD){const u=pt/PD,col=pg.chosen.green?'61,240,131':'255,90,108',cy=cardY+130;
@@ -322,7 +338,7 @@ const fmtT=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%
 function setStatus(s){$('status').textContent=s}
 function updateHud(t){$('counter').textContent=`${passedCount(t)} / ${S.gates.length}`;$('tcur').textContent=fmtT(t);$('seek').value=Math.round(t/S.duration*1000)}
 function highlightRow(l){document.querySelectorAll('.level').forEach((e,i)=>e.classList.toggle('on',i===l))}
-function syncAudio(t){const key=passedCount(t);if(key!==S.lastKey){const first=S.lastKey<0;S.lastKey=key;const l=levelAt(t),off=t-levelStart(t);startAudio(l,off,cfg().loop);startVideo(l,off,first)}}
+function syncAudio(t){const key=passedCount(t);if(key!==S.lastKey){const first=S.lastKey<0;S.lastKey=key;const l=levelAt(t),off=vidOffset(t);startAudio(l,off,cfg().loop);startVideo(l,off,first)}}
 function renderAt(t,withAudio){S.elapsed=t;S.level=levelAt(t);highlightRow(S.level);if(withAudio)syncAudio(t);draw(t);updateHud(t)}
 function redraw(){if(!S.playing&&!S.exporting)renderAt(S.elapsed)}
 function setPlayBtn(){$('play').textContent=S.playing?'Ⅱ Pauza':(S.elapsed>=S.duration?'⟲ Qayta ko‘rish':'▶ Ko‘rish')}
