@@ -37,7 +37,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .level{display:grid;grid-template-columns:46px 1fr;gap:10px;align-items:center;background:#111d2e;padding:8px;border-radius:10px;border:1px solid transparent}
 .level.on{border-color:var(--acc)}
 .thumb{position:relative;width:46px;height:58px;border-radius:7px;background:#2c3d56;overflow:hidden}
-.thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb span{position:absolute;left:3px;bottom:2px;font-size:11px;font-weight:800;text-shadow:0 1px 2px #000}
 .lmain b{font-size:13px}
 .lmain small{display:block;color:var(--mut);font-size:11px;margin:2px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -65,17 +65,17 @@ canvas{width:100%;height:100%;display:block}
 </head>
 <body>
 <div class="wrap">
- <div class="top"><h1>🎮 Level Run — Video Maker</h1><span class="badge" id="loaded">Rasmlar: 0/8 · Ovozlar: 0/8</span></div>
- <p class="sub">Level rasmlari va ovozlarini yuklang, darvozalarni random yarating va videoni eksport qiling.</p>
+ <div class="top"><h1>🎮 Level Run — Video Maker</h1><span class="badge" id="loaded">Videolar: 0/8 · Ovozlar: 0/8</span></div>
+ <p class="sub">Level uchun TikTok (vertikal) videolarini yuklang, darvozalarni random yarating va videoni eksport qiling.</p>
  <div class="layout">
   <section class="panel" aria-label="Sozlamalar">
    <h3>1. Level rasmlari va ovozlari <small>8 ta level</small></h3>
-   <div class="drop" id="drop">Rasm va audio fayllarni shu yerga tashlang
+   <div class="drop" id="drop">Video va audio fayllarni shu yerga tashlang
     <div class="btns">
-     <label class="fbtn">🖼 Barcha rasmlar<input class="vh" id="bulkImg" type="file" accept="image/*" multiple></label>
+     <label class="fbtn">🎬 Barcha videolar<input class="vh" id="bulkVid" type="file" accept="video/*" multiple></label>
      <label class="fbtn">🔊 Barcha ovozlar<input class="vh" id="bulkAud" type="file" accept="audio/*" multiple></label>
     </div>
-    <div style="margin-top:6px;font-size:11px">Fayllar nomi bo‘yicha (1, 2, 3 …) Level 1–8 ga joylanadi<br>Personaj: PNG/WebP, orqa fon shaffof (fonsiz)</div>
+    <div style="margin-top:6px;font-size:11px">Fayllar nomi bo‘yicha (1, 2, 3 …) Level 1–8 ga joylanadi<br>Video: vertikal 9:16 (TikTok), MP4/WebM — ekranning 1/4 qismida chiqadi<br>Ovoz yuklamasangiz, videoning o‘z ovozi ishlaydi</div>
    </div>
    <div id="levels" class="levels"></div>
    <div class="warn" id="warn"></div>
@@ -84,7 +84,7 @@ canvas{width:100%;height:100%;display:block}
    <label class="l" for="startLevel">Boshlang‘ich level</label><select id="startLevel"></select>
    <div class="row">
     <div><label class="l" for="gateCount">Darvozalar soni</label><input id="gateCount" type="number" min="8" max="30" value="20"></div>
-    <div><label class="l" for="duration">Davomiyligi</label><select id="duration"><option value="60">1:00</option><option value="65">1:05</option><option value="70" selected>1:10</option><option value="75">1:15</option><option value="80">1:20</option><option value="85">1:25</option><option value="90">1:30</option></select></div>
+    <div><label class="l" for="gap">Darvozalar oralig‘i</label><select id="gap"><option value="3">3 soniya</option><option value="4">4 soniya</option><option value="5" selected>5 soniya</option><option value="6">6 soniya</option><option value="7">7 soniya</option><option value="8">8 soniya</option></select></div>
    </div>
    <div class="row">
     <div><label class="l" for="greenStep">Yashil o‘zgarish</label><select id="greenStep"><option value="1">+1 level</option><option value="2">+1 yoki +2</option><option value="3">+1 dan +3 gacha</option></select></div>
@@ -105,11 +105,11 @@ canvas{width:100%;height:100%;display:block}
     <div><label class="l" for="fps">Kadr tezligi</label><select id="fps"><option value="30">30 fps</option><option value="60">60 fps</option></select></div>
    </div>
    <label class="chk"><input type="checkbox" id="endMax" checked> Oxirida maksimal levelga (8) chiqsin</label>
-   <label class="chk"><input type="checkbox" id="loop" checked> Audio qisqa bo‘lsa, takrorlansin</label>
+   <label class="chk"><input type="checkbox" id="loop" checked> Alohida ovoz qisqa bo‘lsa, takrorlansin (video doim takrorlanadi)</label>
    <label class="chk"><input type="checkbox" id="hear" checked> Eksport paytida ovozni eshitish</label>
    <div class="toolbar" style="margin-top:16px"><button class="primary" id="generate">🎲 Random video yaratish</button></div>
    <div class="route" id="route" aria-label="Yo‘nalish"></div>
-   <p class="note">Audio o‘sha level faol bo‘lganda yangraydi. Bir xil seed va bir xil sozlamalar har safar bir xil yo‘nalish beradi. Bo‘sh-bo‘sh joylarni tashlab ketsangiz, level raqamli figura bilan ko‘rinadi.</p>
+   <p class="note">Level faol bo‘lganda o‘sha levelning videosi (va ovozi) ijro etiladi. Video kadrning 1/4 qismi (360×640) o‘lchamida chiqadi va yo‘lakdan yo‘lakka harakatlanadi. Bir xil seed va bir xil sozlamalar har safar bir xil yo‘nalish beradi. Video yuklanmagan levelda raqamli kartochka ko‘rinadi.</p>
   </section>
   <section class="stage" aria-label="Video">
    <div class="cw"><canvas id="screen" width="720" height="1280"></canvas></div>
@@ -131,10 +131,11 @@ if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.proto
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const ease=x=>{x=clamp(x,0,1);return x*x*(3-2*x)};
-const W=720,H=1280,NL=8,MAXL=7,OUT=2.0,DV=2.6,NEAR=1.03,GY0=470,GK=(1076-GY0)/NEAR,LANE=118,FONT='Arial,Helvetica,sans-serif';
+const W=720,H=1280,NL=8,MAXL=7,OUT=2.0,DV=1.15,NEAR=1.03,GY0=470,GK=(1076-GY0)/NEAR,LANE=180,FONT='Arial,Helvetica,sans-serif';
 const canvas=$('screen'),ctx=canvas.getContext('2d');
-const S={sprites:Array(NL).fill(null),ph:{},images:Array(NL).fill(null),imgNames:Array(NL).fill(''),imgUrls:Array(NL).fill(''),bufs:Array(NL).fill(null),audNames:Array(NL).fill(''),
+const S={vids:Array(NL).fill(null),vidNames:Array(NL).fill(''),thumbs:Array(NL).fill(''),bufs:Array(NL).fill(null),audNames:Array(NL).fill(''),
  gates:[],duration:70,seed:1,playing:false,startedAt:0,elapsed:0,raf:0,exporting:false,cancel:false,lastKey:-1,scale:1,level:0,startLevel:0};
+const VW=W/2,VH=H/2,VB=1180; // video: kadrning 1/4 qismi (yarim eni x yarim bo‘yi)
 const THEMES={
  day:{top:'#3fc3ee',bot:'#c2f4fd',ground:'#e4f3ff',road:'#8fa9d9',road2:'#7d97cb',edge:'#ffffff',sun:'#fff3a6',hill:'#a8dcec',cloud:'rgba(255,255,255,.92)',hud:'#111827',accent:'#e11d48',pole:'#ffffff',stars:false},
  sunset:{top:'#3b2f86',mid:'#e5608a',bot:'#ffc47a',ground:'#4c3563',road:'#74507f',road2:'#603f6c',edge:'#ffe3a0',sun:'#ffe9b0',hill:'#3a2a58',cloud:'rgba(255,205,225,.55)',hud:'#ffffff',accent:'#ffd166',pole:'#ffd166',stars:false},
@@ -142,8 +143,8 @@ const THEMES={
 /* ---------- tasodifiy (seed bilan) ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* ---------- sozlamalar ---------- */
-const IDS=['startLevel','gateCount','duration','greenStep','redStep','ratio','theme','res','title','tag','seed','fps','loop','hear','endMax'];
-function cfg(){return{start:+$('startLevel').value||0,n:clamp(Math.round(+$('gateCount').value||20),8,30),dur:clamp(+$('duration').value||70,10,90),gMax:+$('greenStep').value,rMax:+$('redStep').value,
+const IDS=['startLevel','gateCount','gap','greenStep','redStep','ratio','theme','res','title','tag','seed','fps','loop','hear','endMax'];
+function cfg(){return{start:+$('startLevel').value||0,n:clamp(Math.round(+$('gateCount').value||20),8,30),gap:clamp(+$('gap').value||5,2,10),gMax:+$('greenStep').value,rMax:+$('redStep').value,
  ratio:+$('ratio').value,theme:$('theme').value,scale:+$('res').value||1,title:($('title').value||'LEVEL RUN').toUpperCase(),tag:($('tag').value||'').toUpperCase(),seed:clamp(Math.round(+$('seed').value)||1,1,999999999),fps:+$('fps').value||30,loop:$('loop').checked,hear:$('hear').checked,endMax:$('endMax').checked}}
 function saveSettings(){try{const o={};IDS.forEach(id=>{const e=$(id);o[id]=e.type==='checkbox'?e.checked:e.value});localStorage.setItem('levelRunSettings',JSON.stringify(o))}catch(e){}}
 function loadSettings(){try{const o=JSON.parse(localStorage.getItem('levelRunSettings')||'null');if(!o)return;IDS.forEach(id=>{if(!(id in o))return;const e=$(id);if(e.type==='checkbox')e.checked=!!o[id];else e.value=o[id]})}catch(e){}}
@@ -152,26 +153,37 @@ function buildRows(){
  const box=$('levels');box.innerHTML='';
  for(let i=0;i<NL;i++){
   const d=document.createElement('div');d.className='level';d.id='row'+i;
-  d.innerHTML=`<div class="thumb"><img id="thumb${i}" alt="" hidden><span>${i+1}</span></div><div class="lmain"><b>Level ${i+1}</b><small id="file${i}">Rasm ham, ovoz ham tanlanmagan</small><div class="btns"><label class="fbtn">🖼 Rasm<input class="vh" type="file" accept="image/*" data-img="${i}" aria-label="Level ${i+1} rasmi"></label><label class="fbtn">🔊 Ovoz<input class="vh" type="file" accept="audio/*" data-aud="${i}" aria-label="Level ${i+1} ovozi"></label><button class="mini" data-test="${i}" title="Ovozni tinglash" aria-label="Level ${i+1} ovozini tinglash">▶</button><button class="mini danger" data-clear="${i}" title="Tozalash" aria-label="Level ${i+1} ni tozalash">✕</button></div></div>`;
+  d.innerHTML=`<div class="thumb"><img id="thumb${i}" alt="" hidden><span>${i+1}</span></div><div class="lmain"><b>Level ${i+1}</b><small id="file${i}">Video ham, ovoz ham tanlanmagan</small><div class="btns"><label class="fbtn">🎬 Video<input class="vh" type="file" accept="video/*" data-vid="${i}" aria-label="Level ${i+1} videosi"></label><label class="fbtn">🔊 Ovoz<input class="vh" type="file" accept="audio/*" data-aud="${i}" aria-label="Level ${i+1} ovozi"></label><button class="mini" data-test="${i}" title="Ovozni tinglash" aria-label="Level ${i+1} ovozini tinglash">▶</button><button class="mini danger" data-clear="${i}" title="Tozalash" aria-label="Level ${i+1} ni tozalash">✕</button></div></div>`;
   box.appendChild(d)}
  $('startLevel').innerHTML=Array.from({length:NL},(_,i)=>`<option value="${i}">Level ${i+1}</option>`).join('');
 }
 function refreshRow(i){
- const a=S.imgNames[i],b=S.audNames[i],th=$('thumb'+i);
- $('file'+i).textContent=(a||b)?`${a?'🖼 '+a:'🖼 —'}  ·  ${b?'🔊 '+b:'🔊 —'}`:'Rasm ham, ovoz ham tanlanmagan';
- if(S.imgUrls[i]){th.src=S.imgUrls[i];th.hidden=false}else{th.removeAttribute('src');th.hidden=true}
- $('loaded').textContent=`Rasmlar: ${S.images.filter(Boolean).length}/8 · Ovozlar: ${S.bufs.filter(Boolean).length}/8`;
+ const a=S.vidNames[i],b=S.audNames[i],th=$('thumb'+i);
+ $('file'+i).textContent=(a||b)?`${a?'🎬 '+a:'🎬 —'}  ·  ${b?'🔊 '+b:(a?'🔊 video ovozi':'🔊 —')}`:'Video ham, ovoz ham tanlanmagan';
+ if(S.thumbs[i]){th.src=S.thumbs[i];th.hidden=false}else{th.removeAttribute('src');th.hidden=true}
+ $('loaded').textContent=`Videolar: ${S.vids.filter(Boolean).length}/8 · Ovozlar: ${S.bufs.filter(Boolean).length}/8`;
  updateWarn();
 }
-function updateWarn(){const mi=S.images.map((x,i)=>x?null:i+1).filter(Boolean),op=S.sprites.map((x,i)=>x&&x.opaque?i+1:null).filter(Boolean);
- $('warn').textContent=[mi.length?`Rasm yo‘q: Level ${mi.join(', ')} — o‘rniga raqamli figura ko‘rinadi.`:'',op.length?`Level ${op.join(', ')}: rasmda shaffof fon yo‘q — to‘rtburchak bo‘lib ko‘rinadi. PNG/WebP (orqa fonsiz) yuklang.`:''].filter(Boolean).join(' ')}
-function setImage(i,file){return new Promise(res=>{if(!file||!file.type.startsWith('image/'))return res();const url=URL.createObjectURL(file),img=new Image();
- img.onload=()=>{if(S.imgUrls[i])URL.revokeObjectURL(S.imgUrls[i]);S.images[i]=img;S.sprites[i]=buildSprite(img,img.naturalWidth||img.width,img.naturalHeight||img.height);S.imgNames[i]=file.name;S.imgUrls[i]=url;refreshRow(i);redraw();res()};
- img.onerror=()=>{URL.revokeObjectURL(url);$('file'+i).textContent='Rasm ochilmadi: '+file.name;res()};img.src=url})}
+function updateWarn(){const mi=S.vids.map((x,i)=>x?null:i+1).filter(Boolean);
+ $('warn').textContent=mi.length?`Video yo‘q: Level ${mi.join(', ')} — o‘rniga raqamli kartochka ko‘rinadi.`:''}
+const vidHost=document.createElement('div');vidHost.style.cssText='position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;overflow:hidden;pointer-events:none;z-index:-1';document.body.appendChild(vidHost);
+function dropVideo(i){const v=S.vids[i];if(!v)return;try{v.el.pause();if(v.gain)v.gain.disconnect();if(v.node)v.node.disconnect();v.el.removeAttribute('src');v.el.load();v.el.remove()}catch(e){}URL.revokeObjectURL(v.url);S.vids[i]=null}
+function setVideo(i,file){return new Promise(res=>{
+ if(!file||!(file.type.startsWith('video/')||/\.(mp4|webm|mov|m4v|mkv)$/i.test(file.name)))return res();
+ const url=URL.createObjectURL(file),el=document.createElement('video');let done=false,thumbDone=false;
+ el.playsInline=true;el.setAttribute('playsinline','');el.loop=true;el.preload='auto';el.src=url;vidHost.appendChild(el);
+ el.onerror=()=>{if(done)return;done=true;URL.revokeObjectURL(url);el.remove();$('file'+i).textContent='Video ochilmadi: '+file.name;res()};
+ const mk=()=>{if(thumbDone)return;thumbDone=true;try{const c=document.createElement('canvas');c.width=92;c.height=116;const x=c.getContext('2d'),vw=el.videoWidth,vh=el.videoHeight,s=Math.max(92/vw,116/vh),sw=92/s,sh=116/s;x.drawImage(el,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,92,116);S.thumbs[i]=c.toDataURL('image/jpeg',.7)}catch(e){}refreshRow(i);previewFrame();res()};
+ el.onloadeddata=()=>{if(done)return;done=true;dropVideo(i);S.vids[i]={el,url,node:null,gain:null};S.vidNames[i]=file.name;
+  el.addEventListener('seeked',()=>{if(!S.playing&&!S.exporting)draw(S.elapsed)});
+  el.addEventListener('seeked',function f(){el.removeEventListener('seeked',f);mk()});
+  try{el.currentTime=Math.min(.1,(el.duration||1)/2)}catch(e){mk()}
+  setTimeout(mk,1500)}})}
 async function setAudio(i,file){if(!file)return;try{const ac=await ensureAudio();S.bufs[i]=await ac.decodeAudioData(await file.arrayBuffer());S.audNames[i]=file.name;refreshRow(i)}catch(e){S.bufs[i]=null;S.audNames[i]='';$('file'+i).textContent='Audio ochilmadi: '+file.name}}
-function clearLevel(i){if(S.imgUrls[i])URL.revokeObjectURL(S.imgUrls[i]);S.images[i]=null;S.sprites[i]=null;S.imgNames[i]='';S.imgUrls[i]='';S.bufs[i]=null;S.audNames[i]='';refreshRow(i);redraw()}
+function clearLevel(i){dropVideo(i);S.vidNames[i]='';S.thumbs[i]='';S.bufs[i]=null;S.audNames[i]='';refreshRow(i);redraw()}
 const natural=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
-async function bulkImages(files){const l=[...files].filter(f=>f.type.startsWith('image/')).sort(natural).slice(0,NL);for(let i=0;i<l.length;i++)await setImage(i,l[i])}
+const isVid=f=>f.type.startsWith('video/')||/\.(mp4|webm|mov|m4v|mkv)$/i.test(f.name);
+async function bulkVideos(files){const l=[...files].filter(isVid).sort(natural).slice(0,NL);for(let i=0;i<l.length;i++)await setVideo(i,l[i])}
 async function bulkAudio(files){const l=[...files].filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(f.name)).sort(natural).slice(0,NL);for(let i=0;i<l.length;i++)await setAudio(i,l[i])}
 /* ---------- audio ---------- */
 const AU={ctx:null,bus:null,spk:null,rec:null,cur:null};
@@ -193,7 +205,7 @@ function levelAt(t){const p=passedCount(t);return p?S.gates[p-1].to:S.startLevel
 function levelStart(t){const p=passedCount(t);return p?passTime(p-1):0}
 function buildGates(){
  const c=cfg(),rnd=mulberry32(c.seed),ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
- S.seed=c.seed;S.duration=c.dur;S.startLevel=c.start;S.scale=c.scale;
+ S.seed=c.seed;S.duration=c.n*c.gap+OUT;S.startLevel=c.start;S.scale=c.scale;
  let lvl=c.start;const out=[];
  for(let i=0;i<c.n;i++){
   let gTo=lvl>=MAXL?lvl:Math.min(MAXL,lvl+ri(1,c.gMax));const rTo=lvl<=0?lvl:Math.max(0,lvl-ri(1,c.rMax));
@@ -208,7 +220,7 @@ function buildGates(){
   out.push({left:pair[0],right:pair[1],chosenIndex,chosen,from:lvl,to:chosen.to});lvl=chosen.to}
  S.gates=out;S.elapsed=0;S.level=c.start;S.lastKey=-1;
  canvas.width=W*S.scale;canvas.height=H*S.scale;
- $('ttot').textContent=fmtT(S.duration);renderRoute();setStatus(`Yo‘nalish tayyor · seed ${S.seed}`);renderAt(0)}
+ $('ttot').textContent=fmtT(S.duration);renderRoute();setStatus(`Yo‘nalish tayyor · seed ${S.seed}`);renderAt(0);previewFrame()}
 function renderRoute(){
  const r=$('route');r.innerHTML=`<span class="chip">Start L${S.startLevel+1}</span>`+S.gates.map(g=>`<span class="chip ${g.chosen.green?'g':'r'}" title="${g.chosen.green?'Yashil':'Qizil'} darvoza">${g.chosen.green?'▲':'▼'}${g.to+1}</span>`).join('');
 }
@@ -234,53 +246,56 @@ function drawRoad(t,th){
  for(let i=0;i<12;i++){const v=(i+off)/12;if(v<.04)continue;const y=mp(v),sc=.06+Math.pow(v,2.2)*1.15;
   for(const x of[roadL(y)-26*sc,roadR(y)+26*sc]){ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-4*sc,y-2*sc,8*sc,4*sc);ctx.fillStyle=th.pole;ctx.fillRect(x-4*sc,y-62*sc,8*sc,62*sc);ctx.beginPath();ctx.arc(x,y-66*sc,9*sc,0,6.283);ctx.fillStyle=th.accent;ctx.fill()}}}
 function drawGate(cx,yg,s,g,alpha){
- const w=190*s,h=150*s,ph=h+58*s,top=yg-ph,r=Math.max(4,10*s),pw=Math.max(3,11*s);
+ const w=330*s,h=270*s,ph=h+80*s,top=yg-ph,r=Math.max(4,10*s),pw=Math.max(3,11*s);
  ctx.save();ctx.globalAlpha=alpha;
  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(cx,yg+2*s,w*.58,9*s,0,0,6.283);ctx.fill();
  ctx.fillStyle='#2c3b55';ctx.fillRect(cx-w/2-pw*.4,top+h*.4,pw,ph-h*.4);ctx.fillRect(cx+w/2-pw*.6,top+h*.4,pw,ph-h*.4);
  const gr=ctx.createLinearGradient(0,top,0,top+h);gr.addColorStop(0,g.green?'#3df083':'#ff6678');gr.addColorStop(1,g.green?'#0e9f3f':'#c81b30');
  ctx.shadowColor=g.green?'rgba(40,230,120,.6)':'rgba(255,60,80,.6)';ctx.shadowBlur=20*s;rr(cx-w/2,top,w,h,r,gr,'#fff',Math.max(2,4*s));ctx.shadowBlur=0;
  ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.roundRect(cx-w/2+4*s,top+4*s,w-8*s,h*.36,r*.7);ctx.fill();
- const fs=42*s;if(fs>=11){ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold ${fs}px ${FONT}`;ctx.fillText(g.text,cx,top+h*.58);ctx.font=`bold ${Math.max(9,15*s)}px ${FONT}`;ctx.fillText(g.label,cx,top+h*.84)}
+ const fs=80*s;if(fs>=11){ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold ${fs}px ${FONT}`;ctx.fillText(g.text,cx,top+h*.58);ctx.font=`bold ${Math.max(9,28*s)}px ${FONT}`;ctx.fillText(g.label,cx,top+h*.84)}
  ctx.restore()}
-function buildSprite(src,sw,sh){
- const k=Math.min(1,700/Math.max(sw,sh)),w=Math.max(1,Math.round(sw*k)),h=Math.max(1,Math.round(sh*k)),c=document.createElement('canvas');c.width=w;c.height=h;
- const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(src,0,0,w,h);
- let x0=w,y0=h,x1=-1,y1=-1,opaque=true,d=null;try{d=x.getImageData(0,0,w,h).data}catch(e){}
- if(d){for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const a=d[(y*w+xx)*4+3];if(a<250)opaque=false;if(a>12){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y}}}
- if(x1<0){x0=0;y0=0;x1=w-1;y1=h-1}
- const bw=x1-x0+1,bh=y1-y0+1,main=document.createElement('canvas'),side=document.createElement('canvas');main.width=side.width=bw;main.height=side.height=bh;
- const m=main.getContext('2d'),sd=side.getContext('2d');m.drawImage(c,x0,y0,bw,bh,0,0,bw,bh);sd.drawImage(c,x0,y0,bw,bh,0,0,bw,bh);
- // hajm: chap-yuqoridan yorug‘lik, o‘ng-pastdan soya
- m.globalCompositeOperation='source-atop';const g=m.createLinearGradient(0,0,bw,bh);g.addColorStop(0,'rgba(255,255,255,.18)');g.addColorStop(.45,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(5,8,30,.3)');m.fillStyle=g;m.fillRect(0,0,bw,bh);
- sd.globalCompositeOperation='source-atop';sd.fillStyle='rgba(8,10,28,.66)';sd.fillRect(0,0,bw,bh);
- return{main,side,w:bw,h:bh,opaque}}
-function getPh(l){if(S.ph[l])return S.ph[l];const c=document.createElement('canvas');c.width=220;c.height=320;const x=c.getContext('2d');
- const g=x.createLinearGradient(0,0,220,320);g.addColorStop(0,'#ffd08a');g.addColorStop(1,'#ff8a3d');x.fillStyle=g;x.beginPath();x.roundRect(40,120,140,190,60);x.fill();
- x.fillStyle='#ffe2b8';x.beginPath();x.arc(110,80,62,0,6.283);x.fill();x.fillStyle='#243044';x.beginPath();x.arc(88,78,7,0,6.283);x.arc(132,78,7,0,6.283);x.fill();
- x.textAlign='center';x.font='bold 96px Arial';x.fillText(String(l+1),110,250);return S.ph[l]=buildSprite(c,220,320)}
-/* 3D personaj: shaffof rasm + qalinlik (extrude) + soya + burilish/og‘ish */
-function drawChar(level,cx,feetY,maxW,maxH,o){
- const sp=S.sprites[level]||getPh(level),k=Math.min(maxW/sp.w,maxH/sp.h),dw=sp.w*k,dh=sp.h*k,yaw=o.yaw||0,jump=o.jump||0,sq=o.sq||1;
- const gs=clamp(1-jump/80,.5,1);
- ctx.save();ctx.translate(cx,feetY+8);ctx.scale(1,.2);const r=dw*.62*gs,sg=ctx.createRadialGradient(0,0,0,0,0,r);sg.addColorStop(0,'rgba(0,0,0,.5)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(0,0,r,0,6.283);ctx.fill();ctx.restore();
- ctx.save();ctx.translate(cx,feetY-jump);ctx.rotate(o.lean||0);ctx.scale(Math.cos(yaw)/Math.sqrt(sq),sq);
- const D=12,depth=dw*.1;
- for(let i=D;i>=1;i--){const f=i/D;ctx.drawImage(sp.side,-dw/2-Math.tan(yaw)*depth*f,-dh-depth*.1*f,dw,dh)}
- ctx.drawImage(sp.main,-dw/2,-dh,dw,dh);ctx.restore()}
+/* ---------- video boshqaruvi ---------- */
+let curVid=-1;
+function vidNode(i){const v=S.vids[i];if(v&&!v.node&&AU.ctx){try{v.node=AU.ctx.createMediaElementSource(v.el);v.gain=AU.ctx.createGain();v.node.connect(v.gain);v.gain.connect(AU.bus)}catch(e){v.node=null}}return v}
+function startVideo(level,offset,force){
+ const v=vidNode(level);
+ S.vids.forEach((o,i)=>{if(o&&i!==level){o.el.pause();if(i===curVid){try{o.el.currentTime=0}catch(e){}}}});
+ curVid=level;if(!v)return;
+ if(v.gain)v.gain.gain.value=S.bufs[level]?0:1;
+ const el=v.el,d=el.duration;if(!force&&!el.paused)return;
+ let off=Math.max(0,offset);if(d&&isFinite(d))off%=d;
+ try{el.currentTime=off}catch(e){}
+ const pr=el.play();if(pr&&pr.catch)pr.catch(()=>{})}
+function stopMedia(f){stopAudio(f);S.vids.forEach(v=>v&&v.el.pause())}
+function previewFrame(){if(S.playing||S.exporting)return;const t=S.elapsed,l=levelAt(t);S.vids.forEach(v=>v&&v.el.pause());const v=S.vids[l];if(!v)return;const d=v.el.duration;let off=Math.max(0,t-levelStart(t));if(d&&isFinite(d))off%=d;try{v.el.currentTime=off}catch(e){}}
+function prepVideo(l){return new Promise(res=>{S.vids.forEach(o=>o&&o.el.pause());const v=S.vids[l];if(!v)return res();const el=v.el;if(el.currentTime===0&&el.readyState>=2)return res();const f=()=>{el.removeEventListener('seeked',f);res()};el.addEventListener('seeked',f);try{el.currentTime=0}catch(e){res()}setTimeout(res,800)})}
+/* TikTok video kartochkasi (kadrning 1/4 qismi): yumaloq burchak, soya, cover-fit */
+function drawVideoCard(level,cx,by,o){
+ o=o||{};const sc=o.scale||1,w=VW*sc,h=VH*sc,r=36*sc,x=-w/2,y=-h,v=S.vids[level],el=v&&v.el;
+ ctx.save();ctx.translate(cx,by);ctx.rotate(o.lean||0);
+ ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=40;ctx.shadowOffsetY=16;rr(x,y,w,h,r,'#000');ctx.restore();
+ ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.clip();
+ if(el&&el.readyState>=2&&el.videoWidth){const vw=el.videoWidth,vh=el.videoHeight,k=Math.max(w/vw,h/vh),sw=w/k,sh=h/k;ctx.drawImage(el,(vw-sw)/2,(vh-sh)/2,sw,sh,x,y,w,h)}
+ else{const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#ffd08a');g.addColorStop(1,'#ff8a3d');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.92)';ctx.font=`bold ${220*sc}px ${FONT}`;ctx.fillText(String(level+1),0,y+h*.52);ctx.fillStyle='rgba(36,48,68,.85)';ctx.font=`bold ${30*sc}px ${FONT}`;ctx.fillText(el?'YUKLANMOQDA…':'VIDEO YO‘Q',0,y+h*.63)}
+ ctx.restore();
+ rr(x,y,w,h,r,null,'rgba(255,255,255,.95)',5);
+ ctx.restore()}
 function laneAt(prog){let x=360;const n=S.gates.length;for(let k=Math.max(0,Math.floor(prog-1.9));k<Math.min(n,Math.ceil(prog+.7)+1);k++){const d=(k+.9)-prog;let w=d>=.1?ease((.6-d)/.5):ease((d+.4)/.5);x+=w*(S.gates[k].chosenIndex===0?-LANE:LANE)}return x}
+function drawGates(prog,n,m){const sc=4.15/DV;
+ for(let i=n-1;i>=0;i--){const d=(i+.9)-prog;if(d>DV||d<-.12)continue;const s=NEAR/(1+sc*d),yg=GY0+GK*s,al=(d<0?clamp(1+d/.12,0,1):clamp((DV-d)/.35,0,1))*m,f=s/NEAR,g=S.gates[i];
+  drawGate(360-LANE*f,yg,s,g.left,al);drawGate(360+LANE*f,yg,s,g.right,al)}}
 function draw(t){
  const k=S.scale,c=cfg(),th=THEMES[c.theme]||THEMES.day,n=S.gates.length,RT=runTime(),p=clamp(t/RT,0,1),prog=p*n;
  ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
  drawSky(t,th);drawRoad(t,th);
- const sc=4.15/DV;
- for(let i=n-1;i>=0;i--){const d=(i+.9)-prog;if(d>DV||d<-.12)continue;const s=NEAR/(1+sc*d),yg=GY0+GK*s,al=d<0?clamp(1+d/.12,0,1):clamp((DV-d)/.35,0,1),f=s/NEAR,g=S.gates[i];
-  drawGate(360-LANE*f,yg,s,g.left,al);drawGate(360+LANE*f,yg,s,g.right,al)}
+ drawGates(prog,n,1);
  // personaj
  const level=S.level,laneX=laneAt(prog),bob=Math.sin(t*13)*5;let cardY=796,shake=0,bump=1;
  const kp=Math.floor(prog-.9),pt=kp>=0&&kp<n?t-passTime(kp):9,PD=.9,pg=kp>=0&&kp<n?S.gates[kp]:null;
  if(pg&&pt>=0&&pt<PD){if(pg.chosen.green)bump=1+.1*(1-pt/PD);else shake=Math.sin(pt*70)*9*(1-pt/.5>0?1-pt/.5:0)}
- {const vx=(laneAt(prog+.02)-laneAt(prog-.02))/.04,turn=clamp(vx/354,-1,1);drawChar(level,laneX+shake,cardY+268,270*bump,330*bump,{yaw:.14+turn*.5+Math.sin(t*6.5)*.07,lean:turn*.1,jump:Math.abs(Math.sin(t*6.5))*16,sq:1+.045*Math.cos(t*13)})}
+ {const vx=(laneAt(prog+.02)-laneAt(prog-.02))/.04,turn=clamp(vx/540,-1,1);drawVideoCard(level,laneX+shake,VB,{lean:turn*.07,scale:bump})}
+ drawGates(prog,n,.38); // video ustida yarim shaffof darvozalar
  ctx.save();ctx.textAlign='center';ctx.lineJoin='round';ctx.font=`bold 30px ${FONT}`;ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.strokeText('LEVEL '+(level+1),laneX+shake,cardY+334);ctx.fillStyle='#fff';ctx.fillText('LEVEL '+(level+1),laneX+shake,cardY+334);ctx.restore();
  // gate efekti
  if(pg&&pt>=0&&pt<PD){const u=pt/PD,col=pg.chosen.green?'61,240,131':'255,90,108',cy=cardY+130;
@@ -299,7 +314,7 @@ function draw(t){
  if(t>RT){const u=ease((t-RT)/.45);ctx.fillStyle=`rgba(7,12,26,${.95*u})`;ctx.fillRect(0,0,W,H);
   ctx.save();ctx.globalAlpha=u;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold 54px ${FONT}`;ctx.fillText(level===MAXL?'MAX LEVEL!':'FINAL LEVEL',W/2,300);
   ctx.fillStyle='#ffad45';ctx.font=`bold 150px ${FONT}`;ctx.shadowColor='rgba(255,173,69,.7)';ctx.shadowBlur=30;ctx.fillText(String(level+1),W/2,450);ctx.shadowBlur=0;ctx.restore();
-  ctx.save();ctx.globalAlpha=u;drawChar(level,W/2,905,340,390,{yaw:Math.sin(t*1.6)*.7,lean:0,jump:Math.abs(Math.sin(t*3))*12,sq:1+.03*Math.sin(t*4)});ctx.restore();
+  ctx.save();ctx.globalAlpha=u;drawVideoCard(level,W/2,VB,{lean:0,scale:1});ctx.restore();
   const rnd=mulberry32(99);for(let q=0;q<30;q++){const x=rnd()*W,sp=40+rnd()*90,y=((rnd()*H+(t-RT)*sp*6)%H);ctx.fillStyle=`rgba(255,${180+rnd()*70|0},${90+rnd()*120|0},${.7*u})`;ctx.beginPath();ctx.arc(x,y,2+rnd()*3,0,6.283);ctx.fill()}}
 }
 /* ---------- boshqaruv ---------- */
@@ -307,13 +322,13 @@ const fmtT=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%
 function setStatus(s){$('status').textContent=s}
 function updateHud(t){$('counter').textContent=`${passedCount(t)} / ${S.gates.length}`;$('tcur').textContent=fmtT(t);$('seek').value=Math.round(t/S.duration*1000)}
 function highlightRow(l){document.querySelectorAll('.level').forEach((e,i)=>e.classList.toggle('on',i===l))}
-function syncAudio(t){const key=passedCount(t);if(key!==S.lastKey){S.lastKey=key;startAudio(levelAt(t),t-levelStart(t),cfg().loop)}}
+function syncAudio(t){const key=passedCount(t);if(key!==S.lastKey){const first=S.lastKey<0;S.lastKey=key;const l=levelAt(t),off=t-levelStart(t);startAudio(l,off,cfg().loop);startVideo(l,off,first)}}
 function renderAt(t,withAudio){S.elapsed=t;S.level=levelAt(t);highlightRow(S.level);if(withAudio)syncAudio(t);draw(t);updateHud(t)}
 function redraw(){if(!S.playing&&!S.exporting)renderAt(S.elapsed)}
 function setPlayBtn(){$('play').textContent=S.playing?'Ⅱ Pauza':(S.elapsed>=S.duration?'⟲ Qayta ko‘rish':'▶ Ko‘rish')}
-function frame(now){if(!S.playing)return;const t=Math.min(S.duration,(now-S.startedAt)/1000);renderAt(t,true);if(t>=S.duration){S.playing=false;stopAudio(.3);setStatus('Tugadi');setPlayBtn();return}S.raf=requestAnimationFrame(frame)}
+function frame(now){if(!S.playing)return;const t=Math.min(S.duration,(now-S.startedAt)/1000);renderAt(t,true);if(t>=S.duration){S.playing=false;stopMedia(.3);setStatus('Tugadi');setPlayBtn();return}S.raf=requestAnimationFrame(frame)}
 async function play(){if(S.exporting)return;if(!S.gates.length)buildGates();await ensureAudio();AU.spk.gain.value=1;if(S.elapsed>=S.duration)S.elapsed=0;S.lastKey=-1;S.playing=true;S.startedAt=performance.now()-S.elapsed*1000;setStatus('Video ijro etilmoqda');setPlayBtn();S.raf=requestAnimationFrame(frame)}
-function pause(){if(!S.playing)return;S.playing=false;cancelAnimationFrame(S.raf);stopAudio(.08);setStatus('Pauza');setPlayBtn()}
+function pause(){if(!S.playing)return;S.playing=false;cancelAnimationFrame(S.raf);stopMedia(.08);setStatus('Pauza');setPlayBtn()}
 function togglePlay(){S.playing?pause():play()}
 function rebuild(keepPlaying){const was=S.playing;pause();buildGates();setPlayBtn();if(keepPlaying&&was)play()}
 /* ---------- eksport ---------- */
@@ -328,34 +343,34 @@ async function exportVideo(){
  let rec;try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:bps,audioBitsPerSecond:192000})}catch(e){setStatus('Yozishni boshlab bo‘lmadi');return}
  const chunks=[];let discard=false;S.cancel=false;
  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
- rec.onstop=()=>{AU.spk.gain.value=1;setExporting(false);stopAudio(.05);
+ rec.onstop=()=>{AU.spk.gain.value=1;setExporting(false);stopMedia(.05);
   if(discard||S.cancel){setStatus('Eksport bekor qilindi');S.elapsed=0;renderAt(0);setPlayBtn();return}
   const ext=mime.startsWith('video/mp4')?'mp4':'webm',blob=new Blob(chunks,{type:mime.split(';')[0]}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=`level-run-${S.seed}.${ext}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
   setStatus(`Video yuklab olindi (${ext.toUpperCase()}, ${(blob.size/1048576).toFixed(1)} MB)`);S.elapsed=0;renderAt(0);setPlayBtn()};
- setExporting(true);S.elapsed=0;S.lastKey=-1;renderAt(0,true);rec.start(1000);const t0=performance.now();
+ setExporting(true);await prepVideo(S.startLevel);S.elapsed=0;S.lastKey=-1;renderAt(0,true);rec.start(1000);const t0=performance.now();
  const tick=now=>{if(S.cancel){rec.stop();return}
   const t=Math.min(S.duration,(now-t0)/1000);renderAt(t,true);setStatus(`Video yozilmoqda… ${Math.floor(t/S.duration*100)}%`);
   if(t<S.duration)requestAnimationFrame(tick);else{draw(S.duration);setTimeout(()=>rec.stop(),350)}};
  requestAnimationFrame(tick)}
 /* ---------- hodisalar ---------- */
 buildRows();loadSettings();
-$('levels').addEventListener('change',async e=>{const t=e.target;if(t.dataset.img!==undefined)await setImage(+t.dataset.img,t.files[0]);else if(t.dataset.aud!==undefined)await setAudio(+t.dataset.aud,t.files[0]);t.value=''});
+$('levels').addEventListener('change',async e=>{const t=e.target;if(t.dataset.vid!==undefined)await setVideo(+t.dataset.vid,t.files[0]);else if(t.dataset.aud!==undefined)await setAudio(+t.dataset.aud,t.files[0]);t.value=''});
 $('levels').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||S.exporting)return;
  if(b.dataset.clear!==undefined)clearLevel(+b.dataset.clear);
- if(b.dataset.test!==undefined){const i=+b.dataset.test;if(!S.bufs[i]){setStatus(`Level ${i+1} uchun ovoz tanlanmagan`);return}pause();await ensureAudio();AU.spk.gain.value=1;S.lastKey=-2;startAudio(i,0,false);highlightRow(i);setStatus(`Level ${i+1} ovozi`)}});
-$('bulkImg').addEventListener('change',async e=>{await bulkImages(e.target.files);e.target.value=''});
+ if(b.dataset.test!==undefined){const i=+b.dataset.test;if(!S.bufs[i]){setStatus(`Level ${i+1} uchun alohida ovoz yuklanmagan (videoning o‘z ovozi ishlatiladi)`);return}pause();await ensureAudio();AU.spk.gain.value=1;S.lastKey=-2;startAudio(i,0,false);highlightRow(i);setStatus(`Level ${i+1} ovozi`)}});
+$('bulkVid').addEventListener('change',async e=>{await bulkVideos(e.target.files);e.target.value=''});
 $('bulkAud').addEventListener('change',async e=>{await bulkAudio(e.target.files);e.target.value=''});
 const dz=$('drop');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));
 ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over')}));
-dz.addEventListener('drop',async e=>{const f=[...e.dataTransfer.files];await bulkImages(f);await bulkAudio(f)});
+dz.addEventListener('drop',async e=>{const f=[...e.dataTransfer.files];await bulkVideos(f);await bulkAudio(f)});
 IDS.forEach(id=>$(id).addEventListener('change',()=>{saveSettings();if(id==='loop'||id==='hear'){return}if(id==='title'||id==='tag'){redraw();return}rebuild(false)}));
 ['title','tag'].forEach(id=>$(id).addEventListener('input',()=>{redraw()}));
 $('generate').onclick=()=>{pause();$('seed').value=1+Math.floor(Math.random()*999999);saveSettings();buildGates();S.elapsed=0;play()};
 $('play').onclick=togglePlay;
 $('restart').onclick=()=>{const was=S.playing;pause();S.elapsed=0;S.lastKey=-1;renderAt(0);setPlayBtn();play()};
 $('export').onclick=exportVideo;$('cancel').onclick=()=>{S.cancel=true};
-$('seek').addEventListener('input',e=>{const t=(+e.target.value/1000)*S.duration,was=S.playing;if(was){S.startedAt=performance.now()-t*1000;S.lastKey=-1}S.elapsed=t;renderAt(t,was);setPlayBtn()});
+$('seek').addEventListener('input',e=>{const t=(+e.target.value/1000)*S.duration,was=S.playing;if(was){S.startedAt=performance.now()-t*1000;S.lastKey=-1}S.elapsed=t;renderAt(t,was);if(!was)previewFrame();setPlayBtn()});
 document.addEventListener('keydown',e=>{if(e.code!=='Space')return;const tg=e.target;if(tg.matches('input[type=text],input[type=number],select,textarea,button'))return;e.preventDefault();if(!S.exporting)togglePlay()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.exporting)setStatus('Diqqat: sahifa fonda — eksport buzilishi mumkin')});
 for(let i=0;i<NL;i++)refreshRow(i);
