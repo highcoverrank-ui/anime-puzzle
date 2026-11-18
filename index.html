@@ -314,13 +314,15 @@ function draw(t){
  const k=S.scale,c=cfg(),th=THEMES[c.theme]||THEMES.day,n=S.gates.length,RT=runTime(),p=clamp(t/RT,0,1),prog=p*n;
  ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
  drawSky(t,th);drawRoad(t,th);
- drawGates(prog,n,1);
  // personaj
  const level=S.level,laneX=laneAt(prog),bob=Math.sin(t*13)*5;let cardY=796,shake=0,bump=1;
  const kp=Math.floor(prog-.9),pt=kp>=0&&kp<n?t-passTime(kp):9,PD=.9,pg=kp>=0&&kp<n?S.gates[kp]:null;
  if(pg&&pt>=0&&pt<PD){if(pg.chosen.green)bump=1+.1*(1-pt/PD);else shake=Math.sin(pt*70)*9*(1-pt/.5>0?1-pt/.5:0)}
- {const vx=(laneAt(prog+.02)-laneAt(prog-.02))/.04,turn=clamp(vx/540,-1,1);drawVideoCard(level,laneX+shake,VB,{lean:turn*.07,scale:bump})}
- drawGates(prog,n,.55); // video ustida yarim shaffof darvozalar
+ {const vx=(laneAt(prog+.02)-laneAt(prog-.02))/.04,turn=clamp(vx/540,-1,1),bw=VW*bump,bh=VH*bump,gx=laneX+shake;
+  // darvozalar video ostida chizilmaydi (video maydoni qirqib tashlanadi), faqat ustida sezilar-sezilmas ko‘rinadi
+  ctx.save();ctx.translate(gx,VB);ctx.rotate(turn*.07);ctx.beginPath();ctx.rect(-W*2,-H*2,W*4,H*4);ctx.roundRect(-bw/2,-bh,bw,bh,36*bump);ctx.clip('evenodd');ctx.rotate(-turn*.07);ctx.translate(-gx,-VB);drawGates(prog,n,1);ctx.restore();
+  drawVideoCard(level,laneX+shake,VB,{lean:turn*.07,scale:bump})}
+ drawGates(prog,n,.12); // video ustida yarim shaffof darvozalar
  ctx.save();ctx.textAlign='center';ctx.lineJoin='round';ctx.font=`bold 30px ${FONT}`;ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.strokeText('LEVEL '+(level+1),laneX+shake,cardY+334);ctx.fillStyle='#fff';ctx.fillText('LEVEL '+(level+1),laneX+shake,cardY+334);ctx.restore();
  // gate efekti
  if(pg&&pt>=0&&pt<PD){const u=pt/PD,col=pg.chosen.green?'61,240,131':'255,90,108',cy=cardY+130;
@@ -337,8 +339,8 @@ function draw(t){
  ctx.fillStyle=th.hud;ctx.font=`22px ${FONT}`;ctx.fillText(`${passedCount(t)} / ${n}  ·  ${Math.floor(p*100)}%`,W/2,1245);
  // yakun
  if(t>RT){const u=ease((t-RT)/.45);ctx.fillStyle=`rgba(7,12,26,${.95*u})`;ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.globalAlpha=u;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold 54px ${FONT}`;ctx.fillText(level===MAXL?'MAX LEVEL!':'FINAL LEVEL',W/2,300);
-  ctx.fillStyle='#ffad45';ctx.font=`bold 150px ${FONT}`;ctx.shadowColor='rgba(255,173,69,.7)';ctx.shadowBlur=30;ctx.fillText(String(level+1),W/2,450);ctx.shadowBlur=0;ctx.restore();
+  ctx.save();ctx.globalAlpha=u;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`bold 84px ${FONT}`;ctx.fillText('WINNER!',W/2,310);
+  ctx.fillStyle='#ffad45';ctx.font=`bold 150px ${FONT}`;ctx.shadowColor='rgba(255,173,69,.7)';ctx.shadowBlur=30;ctx.fillText('🏆',W/2,470);ctx.shadowBlur=0;ctx.restore();
   ctx.save();ctx.globalAlpha=u;drawVideoCard(level,W/2,VB,{lean:0,scale:1});ctx.restore();
   const rnd=mulberry32(99);for(let q=0;q<30;q++){const x=rnd()*W,sp=40+rnd()*90,y=((rnd()*H+(t-RT)*sp*6)%H);ctx.fillStyle=`rgba(255,${180+rnd()*70|0},${90+rnd()*120|0},${.7*u})`;ctx.beginPath();ctx.arc(x,y,2+rnd()*3,0,6.283);ctx.fill()}}
 }
