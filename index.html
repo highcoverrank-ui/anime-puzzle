@@ -96,6 +96,8 @@ canvas{width:100%;height:100%;display:block}
     <div><label class="l" for="theme">Fon</label><select id="theme"><option value="day">☀️ Kunduz</option><option value="sunset">🌇 Kun botishi</option><option value="night">🌙 Tun</option></select></div>
     <div><label class="l" for="res">Sifat</label><select id="res"><option value="1">720×1280</option><option value="1.5">1080×1920</option></select></div>
    </div>
+   <label class="l" for="vidOp">Video shaffofligi (opacity): <b id="vidOpV">100%</b></label>
+   <input type="range" id="vidOp" min="10" max="100" step="5" value="100" style="width:100%" aria-label="Video shaffofligi">
    <div class="row">
     <div><label class="l" for="title">Sarlavha</label><input id="title" type="text" maxlength="22" value="LEVEL RUN"></div>
     <div><label class="l" for="tag">Kichik yozuv</label><input id="tag" type="text" maxlength="30" value="RUN THROUGH THE GATES"></div>
@@ -143,11 +145,12 @@ const THEMES={
 /* ---------- tasodifiy (seed bilan) ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* ---------- sozlamalar ---------- */
-const IDS=['startLevel','gateCount','gap','greenStep','redStep','ratio','theme','res','title','tag','seed','fps','loop','hear','endMax'];
+const IDS=['startLevel','gateCount','gap','greenStep','redStep','ratio','theme','res','title','tag','seed','fps','loop','hear','endMax','vidOp'];
 function cfg(){return{start:+$('startLevel').value||0,n:clamp(Math.round(+$('gateCount').value||20),8,30),gap:clamp(+$('gap').value||5,2,10),gMax:+$('greenStep').value,rMax:+$('redStep').value,
  ratio:+$('ratio').value,theme:$('theme').value,scale:+$('res').value||1,title:($('title').value||'LEVEL RUN').toUpperCase(),tag:($('tag').value||'').toUpperCase(),seed:clamp(Math.round(+$('seed').value)||1,1,999999999),fps:+$('fps').value||30,loop:$('loop').checked,hear:$('hear').checked,endMax:$('endMax').checked}}
+function syncOp(){$('vidOpV').textContent=$('vidOp').value+'%'}
 function saveSettings(){try{const o={};IDS.forEach(id=>{const e=$(id);o[id]=e.type==='checkbox'?e.checked:e.value});localStorage.setItem('levelRunSettings',JSON.stringify(o))}catch(e){}}
-function loadSettings(){try{const o=JSON.parse(localStorage.getItem('levelRunSettings')||'null');if(!o)return;IDS.forEach(id=>{if(!(id in o))return;const e=$(id);if(e.type==='checkbox')e.checked=!!o[id];else e.value=o[id]})}catch(e){}}
+function loadSettings(){try{const o=JSON.parse(localStorage.getItem('levelRunSettings')||'null');if(!o)return;IDS.forEach(id=>{if(!(id in o))return;const e=$(id);if(e.type==='checkbox')e.checked=!!o[id];else e.value=o[id]});syncOp()}catch(e){}}
 /* ---------- level qatorlari ---------- */
 function buildRows(){
  const box=$('levels');box.innerHTML='';
@@ -294,9 +297,9 @@ function previewFrame(){if(S.playing||S.exporting)return;const t=S.elapsed,l=lev
 function prepVideo(l){return new Promise(res=>{S.vids.forEach(o=>o&&o.el.pause());const v=S.vids[l];if(!v)return res();const el=v.el;if(el.currentTime===0&&el.readyState>=2)return res();const f=()=>{el.removeEventListener('seeked',f);res()};el.addEventListener('seeked',f);try{el.currentTime=0}catch(e){res()}setTimeout(res,800)})}
 /* TikTok video kartochkasi (kadrning 1/4 qismi): yumaloq burchak, soya, cover-fit */
 function drawVideoCard(level,cx,by,o){
- o=o||{};const sc=o.scale||1,w=VW*sc,h=VH*sc,r=36*sc,x=-w/2,y=-h,v=S.vids[level],el=v&&v.el;
- ctx.save();ctx.translate(cx,by);ctx.rotate(o.lean||0);
- ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=40;ctx.shadowOffsetY=16;rr(x,y,w,h,r,'#000');ctx.restore();
+ o=o||{};const op=clamp((+$('vidOp').value||100)/100,.1,1),sc=o.scale||1,w=VW*sc,h=VH*sc,r=36*sc,x=-w/2,y=-h,v=S.vids[level],el=v&&v.el;
+ ctx.save();ctx.translate(cx,by);ctx.rotate(o.lean||0);ctx.globalAlpha*=op;
+ if(op>.99){ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=40;ctx.shadowOffsetY=16;rr(x,y,w,h,r,'#000');ctx.restore()}
  ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.clip();
  if(el&&el.readyState>=2&&el.videoWidth){const vw=el.videoWidth,vh=el.videoHeight,k=Math.max(w/vw,h/vh),sw=w/k,sh=h/k;ctx.drawImage(el,(vw-sw)/2,(vh-sh)/2,sw,sh,x,y,w,h)}
  else{const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#ffd08a');g.addColorStop(1,'#ff8a3d');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.92)';ctx.font=`bold ${220*sc}px ${FONT}`;ctx.fillText(String(level+1),0,y+h*.52);ctx.fillStyle='rgba(36,48,68,.85)';ctx.font=`bold ${30*sc}px ${FONT}`;ctx.fillText(el?'YUKLANMOQDA…':'VIDEO YO‘Q',0,y+h*.63)}
@@ -386,8 +389,9 @@ $('bulkAud').addEventListener('change',async e=>{await bulkAudio(e.target.files)
 const dz=$('drop');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));
 ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over')}));
 dz.addEventListener('drop',async e=>{const f=[...e.dataTransfer.files];await bulkVideos(f);await bulkAudio(f)});
-IDS.forEach(id=>$(id).addEventListener('change',()=>{saveSettings();if(id==='loop'||id==='hear'){return}if(id==='title'||id==='tag'){redraw();return}rebuild(false)}));
+IDS.forEach(id=>$(id).addEventListener('change',()=>{saveSettings();if(id==='loop'||id==='hear'||id==='vidOp'){return}if(id==='title'||id==='tag'){redraw();return}rebuild(false)}));
 ['title','tag'].forEach(id=>$(id).addEventListener('input',()=>{redraw()}));
+$('vidOp').addEventListener('input',()=>{syncOp();saveSettings();redraw()});
 $('generate').onclick=()=>{pause();$('seed').value=1+Math.floor(Math.random()*999999);saveSettings();buildGates();S.elapsed=0;play()};
 $('play').onclick=togglePlay;
 $('restart').onclick=()=>{const was=S.playing;pause();S.elapsed=0;S.lastKey=-1;renderAt(0);setPlayBtn();play()};
